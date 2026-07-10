@@ -1,0 +1,387 @@
+'use client';
+
+/**
+ * SpiderCreature v3 — Local-only curved legs, no trailing ropes.
+ *
+ * Architecture (rebuilt from scratch):
+ *  - A Map<starIndex, LegState> tracks all currently fading/active legs
+ *  - Every frame: find stars inside ACTIVE_RADIUS → set targetAlpha=1
+ *  - Every frame: all tracked stars outside radius → targetAlpha=0 → fast decay
+ *  - Once alpha < threshold the entry is deleted from the Map entirely
+ *  - Result: the cluster of legs is ALWAYS centered on the head. Nothing trails.
+ *
+ * Star sizes:
+ *  - 90% tiny  (0.5–1.0 px), 8% medium (1.2–2.2 px), 2% bright (2.5–4.0 px)
+ */
+
+import { useEffect, useRef } from 'react';
+
+// ─── Inline value noise ─────────────────────────────────────────────────
+function hash2(x: number, y: number) {
+  return (Math.sin(x * 127.1 + y * 311.7) * 43758.5453) % 1;
+}
+function smoothstep(t: number) { return t * t * (3 - 2 * t); }
+function vnoise(x: number, y: number) {
+  const ix = Math.floor(x), iy = Math.floor(y);
+  const fx = x - ix, fy = y - iy;
+  const a = hash2(ix, iy), b = hash2(ix + 1, iy);
+  const c = hash2(ix, iy + 1), d = hash2(ix + 1, iy + 1);
+  const ux = smoothstep(fx), uy = smoothstep(fy);
+  return a + (b - a) * ux + (c - a) * uy + (a - b - c + d) * ux * uy;
+}
+function snoise(x: number, y: number) { return vnoise(Math.abs(x), Math.abs(y)) * 2 - 1; }
+
+// ─── Config ─────────────────────────────────────────────────────────────
+const STAR_COUNT      = 1500;
+const CLUSTER_COUNT   = 20;
+const ACTIVE_RADIUS   = 260;      // px — larger to support 30 long legs
+const HEAD_LERP       = 0.055;
+const FADE_IN_STEP    = 0.22;
+const FADE_OUT_K      = 0.38;
+const MAX_LEGS        = 30;       // max simultaneous legs
+const HEAD_OFFSET_DIST = 90;      // px — creature always stays this far from cursor
+
+// ─── Types ───────────────────────────────────────────────────────────────
+interface Star {
+  x: number; y: number;
+  r: number;
+  tier: 0 | 1 | 2;
+  phase: number;
+  speed: number;
+}
+
+interface LegState {
+  alpha: number;
+  targetAlpha: number;
+  // Unique baked personality — stays stable so the leg doesn't jump around
+  bendAngle: number;    // control-point direction rotation (radians)
+  bendMag: number;      // knee offset relative to dist
+  noiseFreq: number;
+  noiseAmp: number;
+  widthMul: number;
+  opacityMul: number;
+  seed: number;         // unique per-leg noise seed
+}
+
+// ─── Module-level stars (rebuilt on resize) ──────────────────────────────
+let STARS: Star[] = [];
+
+function gauss(mean: number, std: number) {
+  const u = Math.random() + 1e-9;
+  const v = Math.random();
+  return mean + std * Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+function buildStars(W: number, H: number) {
+  const centers = Array.from({ length: CLUSTER_COUNT }, () => ({
+    x: Math.random() * W,
+    y: Math.random() * H,
+    std: 50 + Math.random() * 150,
+    w: 0.4 + Math.random() * 1.6,
+  }));
+  const totalW = centers.reduce((s, c) => s + c.w, 0);
+
+  STARS = Array.from({ length: STAR_COUNT }, (_, i) => {
+    // Pick cluster
+    let r = Math.random() * totalW;
+    let cl = centers[0];
+    for (const c of centers) { r -= c.w; if (r <= 0) { cl = c; break; } }
+
+    const x = Math.max(0, Math.min(W, gauss(cl.x, cl.std)));
+    const y = Math.max(0, Math.min(H, gauss(cl.y, cl.std)));
+
+    const roll = Math.random();
+    let tier: 0 | 1 | 2, radius: number;
+    // 96% tiny (0.4–0.8 px), 3% medium (1–2 px), 1% bright (2.5–4 px)
+    if (roll < 0.96)      { tier = 0; radius = 0.4 + Math.random() * 0.4; }
+    else if (roll < 0.99) { tier = 1; radius = 1.0 + Math.random() * 1.0; }
+    else                  { tier = 2; radius = 2.5 + Math.random() * 1.5; }
+
+    return {
+      x, y, r: radius,
+      tier,
+      phase: (i * 1.618033) % (Math.PI * 2),
+      speed: 0.4 + Math.random() * 1.4,
+    };
+  });
+}
+
+// ─── Quadratic bezier sample ─────────────────────────────────────────────
+function qbez(
+  ax: number, ay: number,
+  cx: number, cy: number,
+  bx: number, by: number,
+  t: number
+): [number, number] {
+  const mt = 1 - t;
+  return [mt * mt * ax + 2 * mt * t * cx + t * t * bx,
+          mt * mt * ay + 2 * mt * t * cy + t * t * by];
+}
+
+// ─── Draw one curved leg ──────────────────────────────────────────────────
+function drawLeg(
+  ctx: CanvasRenderingContext2D,
+  footX: number, footY: number,   // star (anchor)
+  headX: number, headY: number,   // creature head
+  leg: LegState,
+  t: number,                      // time (seconds)
+  stretchX = 0,                   // elastic velocity offset
+  stretchY = 0,
+  speed = 0
+) {
+  const dx = headX - footX, dy = headY - footY;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  if (dist < 4) return;
+
+  // Control point: perpendicular to foot→head, rotated by per-leg bendAngle
+  const baseAngle = Math.atan2(dy, dx) + Math.PI / 2 + leg.bendAngle;
+  // Stronger reach — ensures visible curvature even on short legs
+  const reach = Math.max(dist * leg.bendMag, 40);
+
+  // Organic noise wiggle
+  const nx = snoise(t * leg.noiseFreq + leg.seed,      leg.seed * 2.3) * leg.noiseAmp;
+  const ny = snoise(leg.seed * 1.7, t * leg.noiseFreq + leg.seed * 0.5) * leg.noiseAmp;
+
+  // Elastic stretch: fast head movement pushes control point in velocity direction
+  const elasticScale = Math.min(speed * 4, 1.0); // clamp so it stays subtle
+  const cpX = (footX + headX) / 2
+    + Math.cos(baseAngle) * reach
+    + nx
+    + stretchX * elasticScale;
+  const cpY = (footY + headY) / 2
+    + Math.sin(baseAngle) * reach
+    + ny
+    + stretchY * elasticScale;
+
+  const SEGS = 24;
+  for (let s = 0; s < SEGS; s++) {
+    const t0 = s / SEGS, t1 = (s + 1) / SEGS;
+    const [x0, y0] = qbez(footX, footY, cpX, cpY, headX, headY, t0);
+    const [x1, y1] = qbez(footX, footY, cpX, cpY, headX, headY, t1);
+
+    // Opacity: near-zero at foot, bright near head (t→1 = toward head)
+    const env = Math.pow(t0, 0.55);
+    const a = leg.alpha * leg.opacityMul * (0.03 + env * 0.9);
+    if (a < 0.004) continue;
+
+    ctx.beginPath();
+    ctx.moveTo(x0, y0);
+    ctx.lineTo(x1, y1);
+    ctx.strokeStyle = `rgba(175,218,255,${a})`;
+    ctx.lineWidth = leg.widthMul * (0.3 + env * 1.8);
+    ctx.lineCap = 'round';
+    ctx.stroke();
+  }
+}
+
+// ─── Component ────────────────────────────────────────────────────────────
+export default function SpiderCreature() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let W = 0, H = 0;
+    const resize = () => {
+      W = window.innerWidth; H = window.innerHeight;
+      canvas.width = W; canvas.height = H;
+      buildStars(W, H);
+    };
+    resize();
+    window.addEventListener('resize', resize);
+
+    const mouse = { x: W / 2, y: H / 2 };
+    const head  = { x: W / 2, y: H / 2 };
+    // Head velocity — used for elastic control-point stretching
+    const vel   = { x: 0, y: 0 };
+    const onMove = (e: MouseEvent) => { mouse.x = e.clientX; mouse.y = e.clientY; };
+    window.addEventListener('mousemove', onMove);
+
+    // Map of starIndex → LegState for ALL currently tracked legs (active + fading)
+    const legMap = new Map<number, LegState>();
+    let seedCounter = 0;
+
+    let rafId = 0;
+    const t0 = performance.now();
+
+    const frame = () => {
+      const t = (performance.now() - t0) / 1000;
+      ctx.clearRect(0, 0, W, H);
+
+      // ── 1. Head position — follows cursor with gap ──────────
+      // Calculate direction from head toward cursor
+      const prevX = head.x, prevY = head.y;
+      const toCursorX = mouse.x - head.x;
+      const toCursorY = mouse.y - head.y;
+      const toCursorDist = Math.sqrt(toCursorX * toCursorX + toCursorY * toCursorY);
+
+      // Target position = cursor minus HEAD_OFFSET_DIST in the direction of cursor
+      // So the head always trails the cursor at exactly HEAD_OFFSET_DIST px away
+      let targetX = mouse.x, targetY = mouse.y;
+      if (toCursorDist > HEAD_OFFSET_DIST) {
+        // Move target to be HEAD_OFFSET_DIST px behind the cursor from head's perspective
+        const nx = toCursorX / toCursorDist;
+        const ny = toCursorY / toCursorDist;
+        targetX = mouse.x - nx * HEAD_OFFSET_DIST;
+        targetY = mouse.y - ny * HEAD_OFFSET_DIST;
+      } else {
+        // Already inside the offset bubble — don't move toward cursor
+        targetX = head.x;
+        targetY = head.y;
+      }
+
+      head.x += (targetX - head.x) * HEAD_LERP;
+      head.y += (targetY - head.y) * HEAD_LERP;
+
+      // Smooth velocity for elastic stretch
+      vel.x += ((head.x - prevX) - vel.x) * 0.2;
+      vel.y += ((head.y - prevY) - vel.y) * 0.2;
+
+      // Tiny organic idle float
+      const hx = head.x + snoise(t * 0.45, 99) * 2.2;
+      const hy = head.y + snoise(88, t * 0.38) * 1.8;
+
+      // ── 2. Draw stars ─────────────────────────────
+      for (let i = 0; i < STARS.length; i++) {
+        const s = STARS[i];
+        const tw = 0.6 + 0.4 * Math.sin(t * s.speed + s.phase);
+
+        if (s.tier === 0) {
+          // Tiny: single sharp pixel — no glow, pure dot
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(210,222,255,${0.2 * tw})`;
+          ctx.fill();
+        } else if (s.tier === 1) {
+          // Medium: dot + very subtle soft halo (kept small)
+          const g = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r * 2.5);
+          g.addColorStop(0, `rgba(225,235,255,${0.5 * tw})`);
+          g.addColorStop(1, 'rgba(210,225,255,0)');
+          ctx.beginPath(); ctx.arc(s.x, s.y, s.r * 2.5, 0, Math.PI * 2);
+          ctx.fillStyle = g; ctx.fill();
+          ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255,255,255,${0.7 * tw})`; ctx.fill();
+        } else {
+          // Bright (rare): modest glow — NOT dominant
+          const g = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r * 4);
+          g.addColorStop(0,   `rgba(210,230,255,${0.38 * tw})`);
+          g.addColorStop(0.5, `rgba(190,215,255,${0.1 * tw})`);
+          g.addColorStop(1,   'rgba(170,200,255,0)');
+          ctx.beginPath(); ctx.arc(s.x, s.y, s.r * 4, 0, Math.PI * 2);
+          ctx.fillStyle = g; ctx.fill();
+          ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255,255,255,${0.85 * tw})`; ctx.fill();
+        }
+      }
+
+      // ── 3. Find ALL stars in ACTIVE_RADIUS, sorted closest-first ───────
+      //    No cap — every star inside the radius gets a leg (density-adaptive)
+      const nearby: { idx: number; dist2: number }[] = [];
+      const R2 = ACTIVE_RADIUS * ACTIVE_RADIUS;
+      for (let i = 0; i < STARS.length; i++) {
+        const s = STARS[i];
+        const dx = hx - s.x, dy = hy - s.y;
+        const d2 = dx * dx + dy * dy;
+        if (d2 < R2) nearby.push({ idx: i, dist2: d2 });
+      }
+      // Sort closest first so nearest stars are prioritised in the legMap
+      nearby.sort((a, b) => a.dist2 - b.dist2);
+      // Cap at MAX_LEGS — take only the closest ones
+      const active = new Set(nearby.slice(0, MAX_LEGS).map(n => n.idx));
+
+      // ── 4. Update legMap ──────────────────────────
+
+      // 4a. Mark all tracked-but-now-out-of-range legs for fade-out
+      for (const [idx, leg] of legMap) {
+        if (active.has(idx)) {
+          // In range: snap to full alpha quickly
+          leg.targetAlpha = 1;
+          leg.alpha = Math.min(1, leg.alpha + FADE_IN_STEP);
+        } else {
+          // Out of range: fast decay
+          leg.targetAlpha = 0;
+          leg.alpha *= (1 - FADE_OUT_K);
+        }
+        // Prune fully invisible legs
+        if (leg.alpha < 0.008 && leg.targetAlpha === 0) {
+          legMap.delete(idx);
+        }
+      }
+
+      // 4b. Add newly entered stars
+      for (const idx of active) {
+        if (!legMap.has(idx)) {
+          legMap.set(idx, {
+            alpha: 0.05,
+            targetAlpha: 1,
+            // Wider randomization → no two legs look alike
+            bendAngle:  (Math.random() - 0.5) * Math.PI * 1.1,   // ±99° rotation
+            bendMag:     0.55 + Math.random() * 1.05,             // 55–160% of dist
+            noiseFreq:   0.4 + Math.random() * 1.6,
+            noiseAmp:    6   + Math.random() * 18,                 // larger wiggle range
+            widthMul:    0.45 + Math.random() * 1.4,              // 0.45–1.85×
+            opacityMul:  0.40 + Math.random() * 0.55,             // 0.40–0.95
+            seed: ++seedCounter * 0.37,
+          });
+        }
+      }
+
+      // ── 5. Draw legs (with elastic velocity stretch) ──
+      // Velocity magnitude scaled down — used to nudge control points
+      const speed = Math.sqrt(vel.x * vel.x + vel.y * vel.y);
+      const stretchX = vel.x * 6;   // elastic offset on Bezier CP
+      const stretchY = vel.y * 6;
+      for (const [idx, leg] of legMap) {
+        if (leg.alpha < 0.005) continue;
+        const s = STARS[idx];
+        drawLeg(ctx, s.x, s.y, hx, hy, leg, t, stretchX, stretchY, speed);
+      }
+
+      // ── 6. Draw head ──────────────────────────────
+      const pulse = 1 + Math.sin(t * 3.4) * 0.1;
+      const hr = 6.5 * pulse;
+
+      const aura = ctx.createRadialGradient(hx, hy, 0, hx, hy, hr * 8);
+      aura.addColorStop(0, 'rgba(140,200,255,0.12)');
+      aura.addColorStop(0.5, 'rgba(120,175,255,0.04)');
+      aura.addColorStop(1, 'rgba(100,160,255,0)');
+      ctx.beginPath(); ctx.arc(hx, hy, hr * 8, 0, Math.PI * 2);
+      ctx.fillStyle = aura; ctx.fill();
+
+      const glow = ctx.createRadialGradient(hx, hy, 0, hx, hy, hr * 3);
+      glow.addColorStop(0, 'rgba(230,245,255,0.55)');
+      glow.addColorStop(0.55, 'rgba(200,225,255,0.15)');
+      glow.addColorStop(1, 'rgba(180,210,255,0)');
+      ctx.beginPath(); ctx.arc(hx, hy, hr * 3, 0, Math.PI * 2);
+      ctx.fillStyle = glow; ctx.fill();
+
+      const core = ctx.createRadialGradient(hx, hy, 0, hx, hy, hr);
+      core.addColorStop(0, 'rgba(255,255,255,1)');
+      core.addColorStop(0.45, 'rgba(240,248,255,0.88)');
+      core.addColorStop(1, 'rgba(210,235,255,0)');
+      ctx.beginPath(); ctx.arc(hx, hy, hr, 0, Math.PI * 2);
+      ctx.fillStyle = core; ctx.fill();
+
+      rafId = requestAnimationFrame(frame);
+    };
+
+    rafId = requestAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('resize', resize);
+      window.removeEventListener('mousemove', onMove);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="pointer-events-none fixed inset-0"
+      style={{ zIndex: 9999 }}
+    />
+  );
+}
