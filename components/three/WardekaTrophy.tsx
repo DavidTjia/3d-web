@@ -1,9 +1,13 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useRef, useMemo } from "react";
+import { useRef, useMemo, useEffect } from "react";
 import * as THREE from "three";
-import { useGLTF } from "@react-three/drei";
+import { useGLTF, useTexture } from "@react-three/drei";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+gsap.registerPlugin(ScrollTrigger);
 
 interface WardekaTrophyProps {
   scrollProgressRef: React.RefObject<number>;
@@ -13,27 +17,23 @@ export default function WardekaTrophy({
   scrollProgressRef,
 }: WardekaTrophyProps) {
   const groupRef = useRef<THREE.Group>(null);
-  const weaponRef = useRef<THREE.Group>(null);
+  const gamepadRef = useRef<THREE.Group>(null);
   const star1Ref = useRef<THREE.Group>(null);
   const star2Ref = useRef<THREE.Group>(null);
   const star3Ref = useRef<THREE.Group>(null);
 
-  const current = useRef({
-    rotY: 0,
-    posZ: 0,
-    opacity: 0,
-    starRotY: 0,
-    weaponRotY: 0,
-  });
+  // Photo card — dua layer (glow plate + foto) buat efek depth
+  const photoGroupRef = useRef<THREE.Group>(null);
+  const photoGlowRef = useRef<THREE.Mesh>(null);
+  const photoFrontRef = useRef<THREE.Mesh>(null);
 
-  // Load model (cuma sekali per file, di-cache otomatis oleh drei)
-  const trophyGltf = useGLTF("/models/wardeka-trophy.glb");
-  const weaponGltf = useGLTF("/models/wardeka-weapon.glb");
+  const fadeState = useRef({ opacity: 0 });
+  const materialsRef = useRef<THREE.Material[]>([]);
+
+  const gamepadGltf = useGLTF("/models/wardeka-gamepad.glb");
   const starGltf = useGLTF("/models/wardeka-star.glb");
+  const photoTexture = useTexture("/images/wardeka.png");
 
-  // PENTING: clone scene bintang jadi 3 instance terpisah,
-  // karena useGLTF balikin objek yang SAMA tiap dipanggil dengan path yang sama.
-  // Tanpa clone, 1 objek cuma bisa nempel di 1 parent — makanya cuma 1 yang muncul.
   const star1Scene = useMemo(
     () => starGltf.scene.clone(true),
     [starGltf.scene],
@@ -47,86 +47,174 @@ export default function WardekaTrophy({
     [starGltf.scene],
   );
 
-  useFrame(() => {
-    const progress = scrollProgressRef.current ?? 0;
+  useMemo(() => {
+    const mats: THREE.Material[] = [];
+    const collect = (root: THREE.Object3D) => {
+      root.traverse((child) => {
+        const mesh = child as THREE.Mesh;
+        if ((mesh as THREE.Mesh).isMesh) {
+          const list = Array.isArray(mesh.material)
+            ? mesh.material
+            : [mesh.material];
+          list.forEach((m) => {
+            if (m) {
+              m.transparent = true;
+              mats.push(m);
+            }
+          });
+        }
+      });
+    };
+    collect(gamepadGltf.scene);
+    collect(star1Scene);
+    collect(star2Scene);
+    collect(star3Scene);
+    materialsRef.current = mats;
+  }, [gamepadGltf.scene, star1Scene, star2Scene, star3Scene]);
+
+  useEffect(() => {
+    const tween = gsap.to(fadeState.current, {
+      opacity: 1,
+      duration: 1,
+      ease: "power2.out",
+      scrollTrigger: {
+        trigger: "#wardeka-section",
+        start: "top 70%",
+        end: "bottom 30%",
+        toggleActions: "play reverse play reverse",
+      },
+    });
+
+    return () => {
+      tween.scrollTrigger?.kill();
+      tween.kill();
+    };
+  }, []);
+
+  useFrame((state) => {
     if (!groupRef.current) return;
+    const t = state.clock.elapsedTime;
+    const scroll = scrollProgressRef.current ?? 0;
 
-    const inRange = progress > 0 && progress < 1;
-    const targetRotY = progress * Math.PI * 2.5;
-    const targetPosZ = Math.sin(progress * Math.PI) * 0.6;
-    const targetOpacity = inRange ? 1 : 0;
-    const targetStarRotY = -progress * Math.PI * 1.8;
-    const targetWeaponRotY = progress * Math.PI * 1.6;
+    // Scroll-linked orbit rotation — seluruh koleksi berputar mengikuti scroll
+    groupRef.current.rotation.y = scroll * Math.PI * 0.35;
 
-    const c = current.current;
-    c.rotY += (targetRotY - c.rotY) * 0.08;
-    c.posZ += (targetPosZ - c.posZ) * 0.08;
-    c.opacity += (targetOpacity - c.opacity) * 0.1;
-    c.starRotY += (targetStarRotY - c.starRotY) * 0.08;
-    c.weaponRotY += (targetWeaponRotY - c.weaponRotY) * 0.08;
+    // Opacity fade (dari materialsRef, khusus GLTF meshes)
+    const opacity = fadeState.current.opacity;
+    materialsRef.current.forEach((m) => {
+      m.opacity = opacity;
+    });
+    groupRef.current.visible = opacity > 0.01;
 
-    // Group utama (piala) — rotasi & fade
-    groupRef.current.rotation.y = c.rotY;
-    groupRef.current.rotation.z = Math.sin(c.rotY * 0.5) * 0.04;
-    groupRef.current.position.z = c.posZ;
-    groupRef.current.visible = c.opacity > 0.01;
-
-    const scale = 0.55 * Math.max(c.opacity, 0.001);
-    groupRef.current.scale.set(scale, scale, scale);
-
-    // Senjata — sejajar piala (y = 0, hanya digeser ke samping), muter arah sendiri
-    if (weaponRef.current) {
-      weaponRef.current.rotation.y = c.weaponRotY;
-      weaponRef.current.rotation.z = 0.15 + Math.sin(c.rotY * 0.6) * 0.06;
+    // Opacity fade khusus untuk foto (material-nya di-manage terpisah)
+    if (photoGlowRef.current) {
+      const mat = photoGlowRef.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = opacity * 0.5;
+    }
+    if (photoFrontRef.current) {
+      const mat = photoFrontRef.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = opacity;
     }
 
-    // 3 bintang — tiap bintang punya offset waktu & radius beda biar nggak keliatan seragam/kaku
+    // Bobbing gamepad
+    if (gamepadRef.current) {
+      gamepadRef.current.position.y = -0.9 + Math.sin(t * 0.6) * 0.12;
+    }
+
+    // Bobbing bintang — baseline Y diatur di sini, bukan di JSX
     if (star1Ref.current) {
-      star1Ref.current.rotation.y = c.starRotY;
-      star1Ref.current.rotation.x = c.starRotY * 0.5;
-      star1Ref.current.position.y = 1.7 + Math.sin(c.rotY * 0.8) * 0.15;
+      star1Ref.current.position.y = 1.2 + Math.sin(t * 0.7 + 0.5) * 0.15;
     }
     if (star2Ref.current) {
-      star2Ref.current.rotation.y = c.starRotY * 1.3;
-      star2Ref.current.rotation.x = c.starRotY * 0.4;
-      star2Ref.current.position.y = 0.9 + Math.sin(c.rotY * 0.8 + 2.1) * 0.12;
+      star2Ref.current.position.y = -0.9 + Math.sin(t * 0.8 + 2.1) * 0.12;
     }
     if (star3Ref.current) {
-      star3Ref.current.rotation.y = c.starRotY * 0.8;
-      star3Ref.current.rotation.x = c.starRotY * 0.6;
-      star3Ref.current.position.y = 1.3 + Math.sin(c.rotY * 0.8 + 4.2) * 0.18;
+      star3Ref.current.position.y = 1.0 + Math.sin(t * 0.6 + 4.2) * 0.14;
+    }
+
+    // Photo card — parallax depth effect
+    if (photoGroupRef.current) {
+      // Subtle bobbing biar foto ikut "hidup" kaya objek lain
+      photoGroupRef.current.position.y = Math.sin(t * 0.4) * 0.05;
+
+      // Tilt ngikutin cursor, di-lerp biar smooth — bikin kesan depth
+      const targetTiltX = state.pointer.y * 0.08;
+      const targetTiltY = state.pointer.x * 0.1;
+      photoGroupRef.current.rotation.x = THREE.MathUtils.lerp(
+        photoGroupRef.current.rotation.x,
+        targetTiltX,
+        0.05,
+      );
+      photoGroupRef.current.rotation.y = THREE.MathUtils.lerp(
+        photoGroupRef.current.rotation.y,
+        targetTiltY,
+        0.05,
+      );
+    }
+
+    // Glow plate bergerak sedikit lebih lambat dari foto depan → parallax
+    if (photoGlowRef.current) {
+      const glowTiltX = state.pointer.y * 0.04;
+      const glowTiltY = state.pointer.x * 0.05;
+      photoGlowRef.current.rotation.x = THREE.MathUtils.lerp(
+        photoGlowRef.current.rotation.x,
+        glowTiltX,
+        0.05,
+      );
+      photoGlowRef.current.rotation.y = THREE.MathUtils.lerp(
+        photoGlowRef.current.rotation.y,
+        glowTiltY,
+        0.05,
+      );
     }
   });
 
   return (
-    <group ref={groupRef} visible={false} position={[2.4, -0.3, 0]}>
-      {/* PIALA — objek utama */}
-      <primitive object={trophyGltf.scene} position={[0, 0, 0]} />
+    <group ref={groupRef} position={[1.1, -0.3, 0]}>
+      {/* FOTO WARDEKA — centerpiece, landscape orientation */}
+      <group ref={photoGroupRef} position={[-0.05, 0, 0.2]}>
+        {/* Glow plate di belakang — sedikit lebih besar & lebih jauh di Z */}
+        <mesh ref={photoGlowRef} position={[0, 0.2, -0.02]}>
+          <planeGeometry args={[3.3, 2]} />
+          <meshBasicMaterial
+            color="#00d2ff"
+            transparent
+            opacity={0.5}
+            toneMapped={false}
+          />
+        </mesh>
 
-      {/* SENJATA — sejajar (sama tinggi, y=0) dengan piala, cuma digeser ke samping (x) */}
-      <group ref={weaponRef} position={[-1.6, 0, 0.2]}>
-        <primitive object={weaponGltf.scene} scale={0.5} />
+        {/* Foto di depan — landscape 16:9-ish, sesuaikan args ke aspect ratio asli fotomu */}
+        <mesh ref={photoFrontRef} position={[0, 0.2, -0.01]}>
+          <planeGeometry args={[3, 1.75]} />
+          <meshBasicMaterial
+            map={photoTexture}
+            transparent
+            toneMapped={false}
+          />
+        </mesh>
       </group>
 
-      {/* BINTANG 1 — ukuran NORMAL (paling besar dari yang tiga) */}
-      <group ref={star1Ref} position={[1.3, 1.7, 0.4]}>
-        <primitive object={star1Scene} scale={0.4} />
+      {/* GAMEPAD — tidak diubah */}
+      <group ref={gamepadRef} position={[-1.7, 0, 0.8]}>
+        <primitive object={gamepadGltf.scene} scale={0.6} />
       </group>
 
-      {/* BINTANG 2 — ukuran KECIL BANGET */}
-      <group ref={star2Ref} position={[1.6, 0.9, 0.2]}>
-        <primitive object={star2Scene} scale={0.15} />
+      {/* BINTANG — 3 buah, disebar mengelilingi foto */}
+      <group ref={star1Ref} position={[1.7, 0, 0.4]}>
+        <primitive object={star1Scene} scale={0.35} />
       </group>
 
-      {/* BINTANG 3 — ukuran SEDANG */}
-      <group ref={star3Ref} position={[-0.4, 1.3, 0.5]}>
-        <primitive object={star3Scene} scale={0.27} />
+      <group ref={star2Ref} position={[1.5, 0, 0.4]}>
+        <primitive object={star2Scene} scale={0.18} />
+      </group>
+
+      <group ref={star3Ref} position={[-1.8, 0, 0.4]}>
+        <primitive object={star3Scene} scale={0.22} />
       </group>
     </group>
   );
 }
 
-// Preload semua model biar nggak lag pas section pertama kali muncul
-useGLTF.preload("/models/wardeka-trophy.glb");
-useGLTF.preload("/models/wardeka-weapon.glb");
+useGLTF.preload("/models/wardeka-gamepad.glb");
 useGLTF.preload("/models/wardeka-star.glb");

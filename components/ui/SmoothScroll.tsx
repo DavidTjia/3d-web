@@ -16,7 +16,10 @@ export default function SmoothScroll({
   useEffect(() => {
     // Initialize Lenis
     const lenis = new Lenis({
-      duration: 1.6, // Soft, heavy scroll feeling
+      // Duration diturunkan dari 1.6 ke 1.1 — Lenis 1.6 itu berat/lambat,
+      // gabungan sama section yang panjang bikin scroll kerasa "harus jauh banget"
+      // sebelum konten kelihatan bergerak. 1.1 masih smooth tapi jauh lebih responsif.
+      duration: 1.1,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // Custom premium deceleration curve
       orientation: "vertical",
       gestureOrientation: "vertical",
@@ -25,23 +28,22 @@ export default function SmoothScroll({
       touchMultiplier: 1.5,
     });
 
-    // Update ScrollTrigger on Lenis scroll
+    // Update ScrollTrigger tiap kali Lenis scroll
     lenis.on("scroll", ScrollTrigger.update);
 
-    // Frame ticker loop for Lenis
-    let rafId: number;
+    // Pakai gsap.ticker sebagai satu-satunya "clock" buat Lenis & GSAP,
+    // bukan requestAnimationFrame manual terpisah — biar keduanya sinkron
+    // di frame yang sama persis.
     function raf(time: number) {
-      lenis.raf(time);
-      rafId = requestAnimationFrame(raf);
+      lenis.raf(time * 1000);
     }
-    rafId = requestAnimationFrame(raf);
+    gsap.ticker.add(raf);
+    gsap.ticker.lagSmoothing(0);
 
     // Refresh sekali di awal (biar langsung ada perhitungan dasar)
     ScrollTrigger.refresh();
 
     // Refresh lagi setelah window benar-benar selesai load (font, gambar, canvas, dll)
-    // Ini yang nge-fix masalah "baru muncul pas buka DevTools" —
-    // karena tanpa ini, ScrollTrigger keburu ngukur posisi section sebelum semua konten final.
     const handleLoad = () => {
       ScrollTrigger.refresh();
     };
@@ -56,7 +58,7 @@ export default function SmoothScroll({
     // Clean up on unmount
     return () => {
       lenis.destroy();
-      cancelAnimationFrame(rafId);
+      gsap.ticker.remove(raf);
       window.removeEventListener("load", handleLoad);
       clearTimeout(delayedRefresh);
     };

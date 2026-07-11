@@ -10,7 +10,7 @@ interface SpaceCanvasProps {
 
 export default function SpaceCanvas({ scrollProgressRef }: SpaceCanvasProps) {
   return (
-    <div className="absolute inset-0 -z-10 h-screen w-full overflow-hidden bg-space-black">
+    <div className="fixed inset-0 z-0 h-screen w-full overflow-hidden bg-black">
       <Canvas
         camera={{ position: [0, 0, 10], fov: 60, near: 0.1, far: 1000 }}
         gl={{

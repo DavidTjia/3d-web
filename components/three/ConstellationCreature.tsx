@@ -12,6 +12,8 @@
  *   Glowing HEAD (body core)
  *       ↓
  *   Up to 8 active curved limbs connecting to background stars
+ *       ↓
+ *   Glowing FOOT SPHERES — luminous white orbs at each anchor point
  *
  * Behaviour:
  * ──────────
@@ -22,6 +24,8 @@
  *   using a Cubic Bezier curve algorithm computed dynamically on the CPU.
  *   When the head moves away, the leg fades out smoothly instead of snapping off.
  *   Subtle time-based noise is applied to the joints to simulate organic breathing/twitching.
+ *   Each active leg endpoint shows a glowing foot-pad sphere (layered core + glow + aura)
+ *   that pulsates as if the creature is pressing its weight onto the star surface.
  */
 
 import { useFrame } from '@react-three/fiber';
@@ -53,6 +57,12 @@ const DISCONNECT_RADIUS = 4.0; // XY distance to disconnect (hysteresis)
 const LINE_POSITIONS = new Float32Array(MAX_LEGS * SEGMENTS_PER_LEG * 2 * 3);
 // 8 legs × 16 segments × 2 vertices/segment × 1 float (alpha) = 256 floats
 const LINE_ALPHAS = new Float32Array(MAX_LEGS * SEGMENTS_PER_LEG * 2);
+
+// ─── Foot sphere helper ──────────────────────────────────────────────────
+// Shared Object3D for computing instance matrices without allocation overhead
+const FOOT_DUMMY = new THREE.Object3D();
+// Zero-scale matrix to hide inactive instances
+const FOOT_ZERO = new THREE.Matrix4().makeScale(0.0001, 0.0001, 0.0001);
 
 // ─── Custom Shader Material for glow look ──────────────────────────────
 const LEG_MATERIAL = new THREE.ShaderMaterial({
@@ -100,9 +110,14 @@ function evaluateCubicBezier(
 
 // ═════════════════════════════════════════════════════════════════════════
 export default function ConstellationCreature({ scrollProgressRef }: ConstellationCreatureProps) {
-  const headGroupRef = useRef<THREE.Group>(null);
-  const headPos = useRef(new THREE.Vector3(0, 0, 0));
-  const linesRef = useRef<THREE.LineSegments>(null);
+  const headGroupRef    = useRef<THREE.Group>(null);
+  const headPos         = useRef(new THREE.Vector3(0, 0, 0));
+  const linesRef        = useRef<THREE.LineSegments>(null);
+
+  // ── Foot sphere instanced mesh refs (3 layers per foot) ──────────────
+  const footCoreRef  = useRef<THREE.InstancedMesh>(null);  // solid bright core
+  const footGlowRef  = useRef<THREE.InstancedMesh>(null);  // tight inner halo
+  const footAuraRef  = useRef<THREE.InstancedMesh>(null);  // wide soft aura
 
   // Persistence of leg states
   const legSlots = useRef<LegSlot[]>(
@@ -114,13 +129,13 @@ export default function ConstellationCreature({ scrollProgressRef }: Constellati
   );
 
   // Pre-allocated vectors to avoid garbage collection overhead
-  const targetVec = useMemo(() => new THREE.Vector3(), []);
-  const p0 = useMemo(() => new THREE.Vector3(), []);
-  const p1 = useMemo(() => new THREE.Vector3(), []);
-  const p2 = useMemo(() => new THREE.Vector3(), []);
-  const p3 = useMemo(() => new THREE.Vector3(), []);
-  const ptA = useMemo(() => new THREE.Vector3(), []);
-  const ptB = useMemo(() => new THREE.Vector3(), []);
+  const targetVec  = useMemo(() => new THREE.Vector3(), []);
+  const p0         = useMemo(() => new THREE.Vector3(), []);
+  const p1         = useMemo(() => new THREE.Vector3(), []);
+  const p2         = useMemo(() => new THREE.Vector3(), []);
+  const p3         = useMemo(() => new THREE.Vector3(), []);
+  const ptA        = useMemo(() => new THREE.Vector3(), []);
+  const ptB        = useMemo(() => new THREE.Vector3(), []);
   const segmentDir = useMemo(() => new THREE.Vector3(), []);
 
   useFrame((state) => {
@@ -156,8 +171,8 @@ export default function ConstellationCreature({ scrollProgressRef }: Constellati
       const dist = headPos.current.distanceTo(targetVec);
       const isIdle = dist < 0.1;
       const freq = isIdle ? 3.0 : 5.5;
-      const amp = isIdle ? 0.05 : 0.12;
-      const s = (1 + Math.sin(time * freq) * amp) * fade;
+      const amp  = isIdle ? 0.05 : 0.12;
+      const s    = (1 + Math.sin(time * freq) * amp) * fade;
       headGroupRef.current.scale.set(s, s, s);
     }
 
@@ -178,7 +193,6 @@ export default function ConstellationCreature({ scrollProgressRef }: Constellati
       const dy = hy - starPos.y;
       const dist2D = Math.sqrt(dx * dx + dy * dy);
 
-      // Fade out leg if head moves too far away from star
       slot.targetWeight = dist2D > DISCONNECT_RADIUS ? 0 : 1;
       slot.currentWeight += (slot.targetWeight - slot.currentWeight) * 0.08;
 
@@ -205,23 +219,25 @@ export default function ConstellationCreature({ scrollProgressRef }: Constellati
     for (const cand of candidates) {
       if (slots.some((s) => s.starIndex === cand.idx)) continue;
       const emptyIdx = slots.findIndex((s) => s.starIndex === -1);
-      if (emptyIdx === -1) break; // Maximum active legs reached
+      if (emptyIdx === -1) break;
       slots[emptyIdx].starIndex = cand.idx;
       slots[emptyIdx].targetWeight = 1;
-      slots[emptyIdx].currentWeight = 0.02; // Fade-in start
+      slots[emptyIdx].currentWeight = 0.02;
     }
 
     // ----------------------------------------------------------------
-    // 3. GENERATING CURVED GEOMETRIES (Catmull-Rom/Cubic Bezier Spline)
+    // 3. GENERATING CURVED GEOMETRIES (Cubic Bezier Spline)
     // ----------------------------------------------------------------
     if (!linesRef.current) return;
 
-    const posAttr = linesRef.current.geometry.getAttribute('position') as THREE.BufferAttribute;
-    const alphaAttr = linesRef.current.geometry.getAttribute('alpha') as THREE.BufferAttribute;
+    const posAttr   = linesRef.current.geometry.getAttribute('position') as THREE.BufferAttribute;
+    const alphaAttr = linesRef.current.geometry.getAttribute('alpha')    as THREE.BufferAttribute;
+
+    let footMatricesChanged = false;
 
     for (let j = 0; j < MAX_LEGS; j++) {
       const slot = slots[j];
-      const legOffsetPos = j * SEGMENTS_PER_LEG * 2 * 3;
+      const legOffsetPos   = j * SEGMENTS_PER_LEG * 2 * 3;
       const legOffsetAlpha = j * SEGMENTS_PER_LEG * 2;
 
       const active = slot.starIndex !== -1 && slot.currentWeight > 0.005 && fade > 0.01;
@@ -229,40 +245,35 @@ export default function ConstellationCreature({ scrollProgressRef }: Constellati
       if (active) {
         const starPos = STARS[slot.starIndex].position;
 
-        // --- Joint Anchor Positions ---
-        // P0: Head (Body attachment point)
-        p0.copy(headPos.current);
+        // Joint Anchor Positions
+        p0.copy(headPos.current);   // Head attachment
+        p3.copy(starPos);           // Star foot anchor
 
-        // P3: Star (Anchor foot point on star)
-        p3.copy(starPos);
-
-        // Calculate bending properties
         segmentDir.subVectors(p3, p0);
         const dist3D = segmentDir.length();
 
-        // Knee joint elevation factor (bends high up like a spider/insect)
+        // Knee joint elevation
         const bendHeight = 0.8 + dist3D * 0.45;
 
-        // Apply tiny organic idle noise to the joints
+        // Organic idle noise
         const noiseX1 = Math.sin(time * 2.2 + j * 1.5) * 0.05;
         const noiseY1 = Math.cos(time * 1.8 + j * 2.0) * 0.04;
         const noiseZ1 = Math.sin(time * 1.5 - j) * 0.04;
-
         const noiseX2 = Math.cos(time * 2.0 - j * 1.1) * 0.06;
         const noiseY2 = Math.sin(time * 2.4 + j * 0.8) * 0.05;
         const noiseZ2 = Math.cos(time * 1.6 + j * 1.4) * 0.05;
 
-        // P1: Hip (Extends slightly outward and up)
+        // P1: Hip (extends slightly outward and up)
         p1.copy(p0)
           .addScaledVector(segmentDir, 0.25)
           .add(new THREE.Vector3(noiseX1, bendHeight * 0.35 + noiseY1, noiseZ1));
 
-        // P2: Knee joint (Highest bending point of the limb)
+        // P2: Knee joint (highest bending point of the limb)
         p2.copy(p0)
           .addScaledVector(segmentDir, 0.65)
           .add(new THREE.Vector3(noiseX2, bendHeight + noiseY2, noiseZ2));
 
-        // Generate segments along spline curve
+        // Generate curve segments
         for (let s = 0; s < SEGMENTS_PER_LEG; s++) {
           const tA = s / SEGMENTS_PER_LEG;
           const tB = (s + 1) / SEGMENTS_PER_LEG;
@@ -270,47 +281,67 @@ export default function ConstellationCreature({ scrollProgressRef }: Constellati
           evaluateCubicBezier(p0, p1, p2, p3, tA, ptA);
           evaluateCubicBezier(p0, p1, p2, p3, tB, ptB);
 
-          const idxP = legOffsetPos + s * 6;
+          const idxP = legOffsetPos   + s * 6;
           const idxA = legOffsetAlpha + s * 2;
 
-          // Vertex 1
-          LINE_POSITIONS[idxP] = ptA.x;
+          LINE_POSITIONS[idxP]     = ptA.x;
           LINE_POSITIONS[idxP + 1] = ptA.y;
           LINE_POSITIONS[idxP + 2] = ptA.z;
-
-          // Vertex 2
           LINE_POSITIONS[idxP + 3] = ptB.x;
           LINE_POSITIONS[idxP + 4] = ptB.y;
           LINE_POSITIONS[idxP + 5] = ptB.z;
 
-          // Soft opacity tapering toward the foot anchor
-          const taper = 1.0 - tA * 0.6; // Slightly dimmer near the star foot
+          const taper      = 1.0 - tA * 0.6;
           const limbWeight = slot.currentWeight * fade * taper;
-
-          LINE_ALPHAS[idxA] = limbWeight;
+          LINE_ALPHAS[idxA]     = limbWeight;
           LINE_ALPHAS[idxA + 1] = slot.currentWeight * fade * (1.0 - tB * 0.6);
         }
+
+        // ── Update foot sphere instance at star position ──────────────
+        // Pulsating scale for the "pressing weight" feel
+        const pulse = 1.0 + Math.sin(time * 4.5 + j * 0.9) * 0.12;
+        const w     = slot.currentWeight * fade;
+
+        FOOT_DUMMY.position.set(starPos.x, starPos.y, starPos.z);
+        FOOT_DUMMY.scale.setScalar(w * 0.10 * pulse);          // core radius
+        FOOT_DUMMY.updateMatrix();
+        footCoreRef.current?.setMatrixAt(j, FOOT_DUMMY.matrix);
+
+        FOOT_DUMMY.scale.setScalar(w * 0.22 * pulse);           // tight glow
+        FOOT_DUMMY.updateMatrix();
+        footGlowRef.current?.setMatrixAt(j, FOOT_DUMMY.matrix);
+
+        FOOT_DUMMY.scale.setScalar(w * 0.50 * (1 + Math.sin(time * 2.2 + j) * 0.08)); // wide aura breathes slower
+        FOOT_DUMMY.updateMatrix();
+        footAuraRef.current?.setMatrixAt(j, FOOT_DUMMY.matrix);
+
       } else {
-        // Collapse line segment to prevent rendering artifacts
+        // Collapse line segment
         for (let s = 0; s < SEGMENTS_PER_LEG; s++) {
-          const idxP = legOffsetPos + s * 6;
+          const idxP = legOffsetPos   + s * 6;
           const idxA = legOffsetAlpha + s * 2;
-
-          LINE_POSITIONS[idxP] = hx;
-          LINE_POSITIONS[idxP + 1] = hy;
-          LINE_POSITIONS[idxP + 2] = 0;
-          LINE_POSITIONS[idxP + 3] = hx;
-          LINE_POSITIONS[idxP + 4] = hy;
-          LINE_POSITIONS[idxP + 5] = 0;
-
-          LINE_ALPHAS[idxA] = 0;
-          LINE_ALPHAS[idxA + 1] = 0;
+          LINE_POSITIONS[idxP]     = hx; LINE_POSITIONS[idxP + 1] = hy; LINE_POSITIONS[idxP + 2] = 0;
+          LINE_POSITIONS[idxP + 3] = hx; LINE_POSITIONS[idxP + 4] = hy; LINE_POSITIONS[idxP + 5] = 0;
+          LINE_ALPHAS[idxA] = 0; LINE_ALPHAS[idxA + 1] = 0;
         }
+
+        // Hide this foot sphere instance
+        footCoreRef.current?.setMatrixAt(j, FOOT_ZERO);
+        footGlowRef.current?.setMatrixAt(j, FOOT_ZERO);
+        footAuraRef.current?.setMatrixAt(j, FOOT_ZERO);
       }
+
+      footMatricesChanged = true;
     }
 
-    posAttr.needsUpdate = true;
+    posAttr.needsUpdate   = true;
     alphaAttr.needsUpdate = true;
+
+    if (footMatricesChanged) {
+      if (footCoreRef.current)  footCoreRef.current.instanceMatrix.needsUpdate  = true;
+      if (footGlowRef.current)  footGlowRef.current.instanceMatrix.needsUpdate  = true;
+      if (footAuraRef.current)  footAuraRef.current.instanceMatrix.needsUpdate  = true;
+    }
   });
 
   return (
@@ -336,7 +367,58 @@ export default function ConstellationCreature({ scrollProgressRef }: Constellati
         <primitive object={LEG_MATERIAL} attach="material" />
       </lineSegments>
 
-      {/* 2. Core Body Head (Layered Glow Halos) */}
+      {/* 2. Foot Tip Spheres — 3 layers per leg anchor point */}
+
+      {/* Layer A: Solid bright white core (the "contact point") */}
+      <instancedMesh
+        ref={footCoreRef}
+        args={[undefined, undefined, MAX_LEGS]}
+        frustumCulled={false}
+      >
+        <sphereGeometry args={[1, 20, 20]} />
+        <meshBasicMaterial
+          color="#bfe8ff"
+          transparent
+          opacity={0.65}
+          toneMapped={false}
+        />
+      </instancedMesh>
+
+      {/* Layer B: Tight inner glow halo (cyan-white) */}
+      <instancedMesh
+        ref={footGlowRef}
+        args={[undefined, undefined, MAX_LEGS]}
+        frustumCulled={false}
+      >
+        <sphereGeometry args={[1, 14, 14]} />
+        <meshBasicMaterial
+          color="#8cd5ff"
+          transparent
+          opacity={0.35}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+          toneMapped={false}
+        />
+      </instancedMesh>
+
+      {/* Layer C: Wide soft aura (blue-violet breathing pulse) */}
+      <instancedMesh
+        ref={footAuraRef}
+        args={[undefined, undefined, MAX_LEGS]}
+        frustumCulled={false}
+      >
+        <sphereGeometry args={[1, 10, 10]} />
+        <meshBasicMaterial
+          color="#5c7eff"
+          transparent
+          opacity={0.08}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+          toneMapped={false}
+        />
+      </instancedMesh>
+
+      {/* 3. Core Body Head (Layered Glow Halos) */}
       <group ref={headGroupRef}>
         {/* Core solid sphere */}
         <mesh>
@@ -349,11 +431,8 @@ export default function ConstellationCreature({ scrollProgressRef }: Constellati
           <sphereGeometry args={[0.32, 16, 16]} />
           <meshBasicMaterial
             color="#ffffff"
-            transparent
-            opacity={0.4}
-            blending={THREE.AdditiveBlending}
-            depthWrite={false}
-            toneMapped={false}
+            transparent opacity={0.4}
+            blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false}
           />
         </mesh>
 
@@ -362,11 +441,8 @@ export default function ConstellationCreature({ scrollProgressRef }: Constellati
           <sphereGeometry args={[0.55, 16, 16]} />
           <meshBasicMaterial
             color="#a2e2ff"
-            transparent
-            opacity={0.16}
-            blending={THREE.AdditiveBlending}
-            depthWrite={false}
-            toneMapped={false}
+            transparent opacity={0.16}
+            blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false}
           />
         </mesh>
 
@@ -375,11 +451,8 @@ export default function ConstellationCreature({ scrollProgressRef }: Constellati
           <sphereGeometry args={[0.9, 16, 16]} />
           <meshBasicMaterial
             color="#7c3aed"
-            transparent
-            opacity={0.06}
-            blending={THREE.AdditiveBlending}
-            depthWrite={false}
-            toneMapped={false}
+            transparent opacity={0.06}
+            blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false}
           />
         </mesh>
       </group>
