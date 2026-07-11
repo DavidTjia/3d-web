@@ -32,13 +32,13 @@ function vnoise(x: number, y: number) {
 function snoise(x: number, y: number) { return vnoise(Math.abs(x), Math.abs(y)) * 2 - 1; }
 
 // ─── Config ─────────────────────────────────────────────────────────────
-const STAR_COUNT      = 1500;
-const CLUSTER_COUNT   = 20;
-const ACTIVE_RADIUS   = 260;      // px — larger to support 30 long legs
+const STAR_COUNT      = 700;
+const CLUSTER_COUNT   = 12;
+const ACTIVE_RADIUS   = 190;      // px — reduced to avoid cramped edge clusters
 const HEAD_LERP       = 0.055;
 const FADE_IN_STEP    = 0.22;
 const FADE_OUT_K      = 0.38;
-const MAX_LEGS        = 30;       // max simultaneous legs
+const MAX_LEGS        = 18;       // max simultaneous legs — prevents crowding
 const HEAD_OFFSET_DIST = 90;      // px — creature always stays this far from cursor
 
 // ─── Types ───────────────────────────────────────────────────────────────
@@ -159,18 +159,65 @@ function drawLeg(
     const [x0, y0] = qbez(footX, footY, cpX, cpY, headX, headY, t0);
     const [x1, y1] = qbez(footX, footY, cpX, cpY, headX, headY, t1);
 
-    // Opacity: near-zero at foot, bright near head (t→1 = toward head)
+    // Opacity profile: fade out slightly near the center, very bright near the head and foot
     const env = Math.pow(t0, 0.55);
-    const a = leg.alpha * leg.opacityMul * (0.03 + env * 0.9);
+    const opacityEnv = 0.25 * (1.0 - t0) + env * 0.75;
+    const a = leg.alpha * leg.opacityMul * (0.05 + opacityEnv * 0.95);
     if (a < 0.004) continue;
 
     ctx.beginPath();
     ctx.moveTo(x0, y0);
     ctx.lineTo(x1, y1);
-    ctx.strokeStyle = `rgba(175,218,255,${a})`;
-    ctx.lineWidth = leg.widthMul * (0.3 + env * 1.8);
+    ctx.strokeStyle = `rgba(185,225,255,${a})`;
+    
+    // Thicken near foot (t0 -> 0) and head (t0 -> 1) for realistic anatomy
+    const thicknessEnv = 0.55 * Math.pow(1.0 - t0, 1.5) + env * 1.75;
+    ctx.lineWidth = leg.widthMul * (0.45 + thicknessEnv * 1.6);
     ctx.lineCap = 'round';
     ctx.stroke();
+  }
+
+  // ── Draw 3-layered glowing footpad circle at foot anchor ──
+  const w = leg.alpha;
+  const pulse = 1.0 + Math.sin(t * 5.0 + leg.seed) * 0.12;
+
+  // Layer 1: Wide soft blue-violet aura (radius ~12px)
+  const auraRad = 12 * w * pulse;
+  if (auraRad > 0.5) {
+    const gAura = ctx.createRadialGradient(footX, footY, 0, footX, footY, auraRad);
+    gAura.addColorStop(0, `rgba(104, 136, 255, ${0.16 * w})`);
+    gAura.addColorStop(0.5, `rgba(104, 136, 255, ${0.05 * w})`);
+    gAura.addColorStop(1, 'rgba(104, 136, 255, 0)');
+    ctx.beginPath();
+    ctx.arc(footX, footY, auraRad, 0, Math.PI * 2);
+    ctx.fillStyle = gAura;
+    ctx.fill();
+  }
+
+  // Layer 2: Tight blue-white glow halo (radius ~6px)
+  const glowRad = 6.2 * w * pulse;
+  if (glowRad > 0.5) {
+    const gGlow = ctx.createRadialGradient(footX, footY, 0, footX, footY, glowRad);
+    gGlow.addColorStop(0, `rgba(184, 232, 255, ${0.72 * w})`);
+    gGlow.addColorStop(0.6, `rgba(184, 232, 255, ${0.25 * w})`);
+    gGlow.addColorStop(1, 'rgba(184, 232, 255, 0)');
+    ctx.beginPath();
+    ctx.arc(footX, footY, glowRad, 0, Math.PI * 2);
+    ctx.fillStyle = gGlow;
+    ctx.fill();
+  }
+
+  // Layer 3: Soft core (not solid white, but soft, blurry, semi-transparent blue-white)
+  const coreRad = 2.8 * w * pulse;
+  if (coreRad > 0.5) {
+    const gCore = ctx.createRadialGradient(footX, footY, 0, footX, footY, coreRad);
+    gCore.addColorStop(0, `rgba(191, 232, 255, ${0.65 * w})`);
+    gCore.addColorStop(0.5, `rgba(191, 232, 255, ${0.3 * w})`);
+    gCore.addColorStop(1, 'rgba(191, 232, 255, 0)');
+    ctx.beginPath();
+    ctx.arc(footX, footY, coreRad, 0, Math.PI * 2);
+    ctx.fillStyle = gCore;
+    ctx.fill();
   }
 }
 

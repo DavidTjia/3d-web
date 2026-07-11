@@ -17,7 +17,7 @@ export interface StarData {
   reactionMultiplier: number;
 }
 
-export const STAR_COUNT = 700;
+export const STAR_COUNT = 400;
 
 export const STARS: StarData[] = Array.from({ length: STAR_COUNT }, () => {
   // Tighter XY distribution so more stars are visible in the viewport
