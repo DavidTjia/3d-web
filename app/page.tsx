@@ -1,15 +1,17 @@
-'use client';
+"use client";
 
-import { useEffect, useRef } from 'react';
-import SpaceCanvas from '@/components/three/SpaceCanvas';
-import CustomCursor from '@/components/ui/CustomCursor';
-import SpiderCreature from '@/components/ui/SpiderCreature';
-import SmoothScroll from '@/components/ui/SmoothScroll';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useEffect, useRef } from "react";
+import SpaceCanvas from "@/components/three/SpaceCanvas";
+import WardekaCanvas from "@/components/three/WardekaCanvas";
+import CustomCursor from "@/components/ui/CustomCursor";
+import SpiderCreature from "@/components/ui/SpiderCreature";
+// import SmoothScroll from '@/components/ui/SmoothScroll'; // sementara dimatikan buat testing
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 export default function Home() {
   const scrollProgressRef = useRef<number>(0);
+  const wardekaProgressRef = useRef<number>(0);
   const heroRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -18,9 +20,9 @@ export default function Home() {
 
     // Track scroll progress and animate the HTML Hero overlay
     const trigger = ScrollTrigger.create({
-      trigger: 'body',
-      start: 'top top',
-      end: '+=100%', // Ends when user has scrolled 100vh (equivalent to one viewport height)
+      trigger: "body",
+      start: "top top",
+      end: "+=100%", // Ends when user has scrolled 100vh (equivalent to one viewport height)
       scrub: true,
       onUpdate: (self) => {
         // Feed scroll progress (0.0 to 1.0) to the background WebGL scene
@@ -28,19 +30,34 @@ export default function Home() {
 
         // Fade out and translate the Hero text overlay
         if (heroRef.current) {
-          heroRef.current.style.opacity = Math.max(0, 1 - self.progress * 1.5).toString();
+          heroRef.current.style.opacity = Math.max(
+            0,
+            1 - self.progress * 1.5,
+          ).toString();
           heroRef.current.style.transform = `translate3d(0, -${self.progress * 120}px, 0)`;
         }
       },
     });
 
+    // Track scroll progress khusus section Wardeka (0 -> 1 selama section itu discroll)
+    const wardekaTrigger = ScrollTrigger.create({
+      trigger: "#wardeka-section",
+      start: "top top",
+      end: "bottom bottom",
+      scrub: true,
+      onUpdate: (self) => {
+        wardekaProgressRef.current = self.progress;
+      },
+    });
+
     return () => {
       trigger.kill();
+      wardekaTrigger.kill();
     };
   }, []);
 
   return (
-    <SmoothScroll>
+    <>
       {/* Premium WebGL Background */}
       <SpaceCanvas scrollProgressRef={scrollProgressRef} />
 
@@ -51,13 +68,13 @@ export default function Home() {
       <CustomCursor />
 
       {/* HTML Layout Container */}
-      <main className="relative z-10 w-full min-h-[220vh]">
+      <main className="relative z-10 w-full min-h-screen">
         {/* SECTION 1: HERO OVERLAY */}
         <section className="relative flex h-screen w-full flex-col items-center justify-center px-6 overflow-hidden">
           <div
             ref={heroRef}
             className="flex flex-col items-center text-center select-none"
-            style={{ willChange: 'opacity, transform' }}
+            style={{ willChange: "opacity, transform" }}
           >
             {/* Ambient background nebulae glow colors (adds depth behind the title) */}
             <div className="absolute -z-10 h-64 w-64 rounded-full bg-cyan-glow/10 blur-[100px] pointer-events-none" />
@@ -75,7 +92,8 @@ export default function Home() {
 
             {/* Paragraph Subtitle */}
             <p className="max-w-md font-body text-sm md:text-base text-gray-400 font-light tracking-wide leading-relaxed mb-12">
-              Architecting premium interactive 3D ecosystems and celestial gameplay experiences.
+              Architecting premium interactive 3D ecosystems and celestial
+              gameplay experiences.
             </p>
 
             {/* Custom Interactive Scroll Prompt */}
@@ -90,28 +108,112 @@ export default function Home() {
           </div>
         </section>
 
-        {/* SECTION 2: TRANSITION & DEMO CARD */}
-        <section className="relative flex min-h-screen w-full items-center justify-center px-6 py-24 bg-transparent">
-          <div className="glassmorphism max-w-3xl w-full p-10 md:p-14 rounded-2xl relative overflow-hidden group">
-            {/* Interactive glow border effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-cyan-glow/5 to-nebula-purple/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-            
-            <span className="text-xs font-semibold tracking-[0.35em] uppercase text-cyan-glow mb-4 block">
-              01 // The Odyssey
-            </span>
-            
-            <h2 className="font-display text-3xl md:text-5xl font-bold tracking-wide text-white mb-6">
-              Experiences Shaped in Deep Space.
-            </h2>
-            
-            <p className="font-body text-gray-400 text-base md:text-lg font-light leading-relaxed mb-8">
-              We push the boundaries of real-time WebGL and game engine technologies to build immersive, high-performance interactive portals. Hover the cursor to watch the alien constellation creature adapt its energy tentacles to local space coordinates in real-time.
-            </p>
-            
-            <div className="w-16 h-[2px] bg-gradient-to-r from-cyan-glow to-nebula-purple" />
+        {/* SECTION 3: CASE STUDY — WARDEKA EDONISIA */}
+        {/* SECTION: WARDEKA EDONISIA */}
+        <section id="wardeka-section" className="relative w-full h-[300vh]">
+          <WardekaCanvas scrollProgressRef={wardekaProgressRef} />
+          <div className="absolute inset-0 flex items-center px-6 md:px-16 pointer-events-none">
+            <div className="max-w-2xl">
+              <span className="text-xs font-semibold tracking-[0.35em] uppercase text-cyan-glow mb-4 block">
+                Game Development · Esports
+              </span>
+
+              <h2 className="font-display text-3xl md:text-5xl font-bold text-white mb-4">
+                Wardeka <span className="text-cyan-glow">Edonisia</span>
+              </h2>
+
+              <p className="font-body text-gray-300 text-sm md:text-base leading-relaxed mb-6 max-w-xl">
+                Game esports shooter mobile pertama karya Indonesia,
+                dikembangkan Big Dade Interactive di bawah PT Kawanua Virtual
+                Teknologi.
+              </p>
+
+              {/* Problem → Solution */}
+              <div className="space-y-3 mb-6 max-w-xl">
+                <div className="border-l-2 border-cyan-glow/40 pl-4">
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-gray-500 mb-1">
+                    Tantangan
+                  </p>
+                  <p className="font-body text-gray-400 text-sm leading-relaxed">
+                    Dari Rp33 triliun pasar game Indonesia, 95% direbut
+                    developer luar negeri — Indonesia lebih banyak jadi penonton
+                    ketimbang pemain di industrinya sendiri.
+                    <span className="text-gray-600">
+                      {" "}
+                      (detikINET, April 2025)
+                    </span>
+                  </p>
+                </div>
+                <div className="border-l-2 border-cyan-glow/40 pl-4">
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-gray-500 mb-1">
+                    Solusi
+                  </p>
+                  <p className="font-body text-gray-400 text-sm leading-relaxed">
+                    Game shooter dengan karakter, senjata, skin, dan cerita
+                    bernuansa budaya Indonesia — arena futuristik, karakter
+                    berbahasa Indonesia, enam ability unik (Fast, Scan,
+                    Invisible, Heal, Shield, Stun), dirancang untuk turnamen
+                    esports nasional & internasional.
+                  </p>
+                </div>
+              </div>
+
+              {/* Tech highlights — compact grid */}
+              <div className="grid grid-cols-2 gap-x-6 gap-y-2 mb-6 max-w-xl text-xs text-gray-400">
+                <p>
+                  ⚙ Game client + PC client turnamen skala
+                  nasional/internasional
+                </p>
+                <p>⚙ Dashboard & analytic custom (performa, item, penjualan)</p>
+                <p>
+                  ⚙ Cloud architecture sendiri — &quot;Delta Garuda&quot;, 7
+                  tahun pengembangan
+                </p>
+                <p>
+                  ⚙ 86 item fashion · 57 skin senjata · battlepass · gacha
+                  system
+                </p>
+              </div>
+
+              {/* Achievements — chip style biar ringkas tapi lengkap */}
+              <div className="mb-6 max-w-xl">
+                <p className="text-[11px] uppercase tracking-[0.2em] text-gray-500 mb-2">
+                  Pencapaian
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    "Cabang esports resmi — PON 2024/2025",
+                    "Piala Presiden Esports 2024",
+                    "Cabang olahraga — PORPROV XII Sulut 2025",
+                    "Juara Nasional AKI 2023",
+                    "Apresiasi 5 Menteri + Wapres + Gubernur Sulut",
+                    "Turnamen shooter lokal pertama — Sabang–Merauke",
+                    "Diliput ratusan media nasional",
+                  ].map((item) => (
+                    <span
+                      key={item}
+                      className="text-[11px] text-gray-300 bg-white/5 border border-white/10 rounded-full px-3 py-1"
+                    >
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Roadmap */}
+              <div className="max-w-xl">
+                <p className="font-body text-gray-500 text-xs italic">
+                  Ke depan:{" "}
+                  <span className="text-cyan-glow not-italic">
+                    Wardeka World War 2025
+                  </span>{" "}
+                  — target 1% market share game Indonesia.
+                </p>
+              </div>
+            </div>
           </div>
         </section>
       </main>
-    </SmoothScroll>
+    </>
   );
 }
