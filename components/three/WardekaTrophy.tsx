@@ -13,37 +13,83 @@ interface WardekaTrophyProps {
   scrollProgressRef: React.RefObject<number>;
 }
 
+// Konfigurasi tiap bintang — posisi, scale, kecepatan bobbing, offset fase.
+// Tinggal tambah/kurangi/edit baris di sini buat atur jumlah & posisi bintang.
+const STAR_CONFIG = [
+  { x: 1.9, y: 1.1, z: 0.4, scale: 0.32, bobSpeed: 0.7, bobPhase: 0.5 },
+  { x: 1.6, y: -0.8, z: 0.5, scale: 0.2, bobSpeed: 0.8, bobPhase: 2.1 },
+  { x: -1.9, y: 0.9, z: 0.4, scale: 0.28, bobSpeed: 0.6, bobPhase: 4.2 },
+  { x: -1.6, y: -1.0, z: 0.5, scale: 0.16, bobSpeed: 0.9, bobPhase: 1.3 },
+  { x: 2.2, y: -0.1, z: 0.2, scale: 0.14, bobSpeed: 0.75, bobPhase: 3.0 },
+  { x: -2.2, y: 0.1, z: 0.2, scale: 0.22, bobSpeed: 0.65, bobPhase: 5.5 },
+];
+
+// Posisi 4 sudut HUD bracket di foto — [x, y] relatif ke pusat photoGroupRef
+const HUD_CORNERS: [number, number][] = [
+  [-1.5, 1.075],
+  [1.5, 1.075],
+  [-1.5, -0.675],
+  [1.5, -0.675],
+];
+
+// Helper: update scale + glow intensity berdasarkan jarak cursor ke bintang (NDC space)
+function updateStarProximity(
+  starObj: THREE.Group | null,
+  glowObj: THREE.PointLight | null,
+  proximity: { value: number },
+  baseScale: number,
+  camera: THREE.Camera,
+  pointer: THREE.Vector2,
+  tmpVec: THREE.Vector3,
+) {
+  if (!starObj) return;
+
+  starObj.getWorldPosition(tmpVec);
+  tmpVec.project(camera);
+
+  const dist = Math.hypot(tmpVec.x - pointer.x, tmpVec.y - pointer.y);
+  const threshold = 0.4;
+  const target = THREE.MathUtils.clamp(1 - dist / threshold, 0, 1);
+
+  proximity.value = THREE.MathUtils.lerp(proximity.value, target, 0.15);
+
+  const boost = 1 + proximity.value * 0.5;
+  starObj.scale.setScalar(baseScale * boost);
+
+  if (glowObj) {
+    glowObj.intensity = proximity.value * 2.5;
+  }
+}
+
 export default function WardekaTrophy({
   scrollProgressRef,
 }: WardekaTrophyProps) {
   const groupRef = useRef<THREE.Group>(null);
-  const gamepadRef = useRef<THREE.Group>(null);
-  const star1Ref = useRef<THREE.Group>(null);
-  const star2Ref = useRef<THREE.Group>(null);
-  const star3Ref = useRef<THREE.Group>(null);
+
+  // Refs per bintang, disimpan sebagai array — jumlahnya ngikutin STAR_CONFIG
+  const starRefs = useRef<(THREE.Group | null)[]>([]);
+  const glowRefs = useRef<(THREE.PointLight | null)[]>([]);
+  const proximities = useRef(STAR_CONFIG.map(() => ({ value: 0 })));
+  const tmpWorldPos = useRef(new THREE.Vector3());
 
   // Photo card — dua layer (glow plate + foto) buat efek depth
   const photoGroupRef = useRef<THREE.Group>(null);
   const photoGlowRef = useRef<THREE.Mesh>(null);
   const photoFrontRef = useRef<THREE.Mesh>(null);
 
+  // Elemen atmosfer tambahan — ring, constellation lines, dust
+  const dustRef = useRef<THREE.Points>(null);
+  const ringRef = useRef<THREE.Mesh>(null);
+
   const fadeState = useRef({ opacity: 0 });
   const materialsRef = useRef<THREE.Material[]>([]);
 
-  const gamepadGltf = useGLTF("/models/wardeka-gamepad.glb");
   const starGltf = useGLTF("/models/wardeka-star.glb");
   const photoTexture = useTexture("/images/wardeka.png");
 
-  const star1Scene = useMemo(
-    () => starGltf.scene.clone(true),
-    [starGltf.scene],
-  );
-  const star2Scene = useMemo(
-    () => starGltf.scene.clone(true),
-    [starGltf.scene],
-  );
-  const star3Scene = useMemo(
-    () => starGltf.scene.clone(true),
+  // Clone model bintang sebanyak jumlah di STAR_CONFIG
+  const starScenes = useMemo(
+    () => STAR_CONFIG.map(() => starGltf.scene.clone(true)),
     [starGltf.scene],
   );
 
@@ -65,29 +111,59 @@ export default function WardekaTrophy({
         }
       });
     };
-    collect(gamepadGltf.scene);
-    collect(star1Scene);
-    collect(star2Scene);
-    collect(star3Scene);
+    starScenes.forEach(collect);
     materialsRef.current = mats;
-  }, [gamepadGltf.scene, star1Scene, star2Scene, star3Scene]);
+  }, [starScenes]);
+
+  // Posisi dust particle — di-generate sekali, melayang random di sekitar scene
+  const dustPositions = useMemo(() => {
+    const count = 60;
+    const positions = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      positions[i * 3] = (Math.random() - 0.5) * 8;
+      positions[i * 3 + 1] = (Math.random() - 0.5) * 5;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 3 - 1;
+    }
+    return positions;
+  }, []);
+
+  // Garis constellation — menghubungkan tiap bintang ke bintang berikutnya
+  const constellationPositions = useMemo(() => {
+    const pts: number[] = [];
+    for (let i = 0; i < STAR_CONFIG.length; i++) {
+      const a = STAR_CONFIG[i];
+      const b = STAR_CONFIG[(i + 1) % STAR_CONFIG.length];
+      pts.push(a.x, a.y, a.z, b.x, b.y, b.z);
+    }
+    return new Float32Array(pts);
+  }, []);
 
   useEffect(() => {
-    const tween = gsap.to(fadeState.current, {
-      opacity: 1,
-      duration: 1,
-      ease: "power2.out",
-      scrollTrigger: {
-        trigger: "#wardeka-section",
-        start: "top 70%",
-        end: "bottom 30%",
-        toggleActions: "play reverse play reverse",
-      },
-    });
+    // Delay dikit biar ScrollTrigger nunggu semua layout (loading screen,
+    // navbar, dll) beres dulu sebelum ngukur posisi trigger — biar gak "ngaco"
+    const setupTimeout = setTimeout(() => {
+      gsap.set(fadeState.current, { opacity: 0 });
+
+      const tween = gsap.to(fadeState.current, {
+        opacity: 1,
+        duration: 1.4,
+        ease: "power2.out",
+        scrollTrigger: {
+          trigger: "#wardeka-section",
+          start: "top 90%",
+          end: "bottom 30%",
+          toggleActions: "play reverse play reverse",
+          invalidateOnRefresh: true,
+        },
+      });
+
+      ScrollTrigger.refresh();
+
+      return tween;
+    }, 1000);
 
     return () => {
-      tween.scrollTrigger?.kill();
-      tween.kill();
+      clearTimeout(setupTimeout);
     };
   }, []);
 
@@ -116,28 +192,44 @@ export default function WardekaTrophy({
       mat.opacity = opacity;
     }
 
-    // Bobbing gamepad
-    if (gamepadRef.current) {
-      gamepadRef.current.position.y = -0.9 + Math.sin(t * 0.6) * 0.12;
+    // Bobbing + cursor-reactive twinkle — loop semua bintang di STAR_CONFIG
+    STAR_CONFIG.forEach((cfg, i) => {
+      const star = starRefs.current[i];
+      const glow = glowRefs.current[i];
+      if (!star) return;
+
+      star.position.y =
+        cfg.y + Math.sin(t * cfg.bobSpeed + cfg.bobPhase) * 0.13;
+
+      updateStarProximity(
+        star,
+        glow,
+        proximities.current[i],
+        cfg.scale,
+        state.camera,
+        state.pointer,
+        tmpWorldPos.current,
+      );
+    });
+
+    // Dust particle — melayang pelan, rotasi lambat
+    if (dustRef.current) {
+      dustRef.current.rotation.y = t * 0.02;
+      const mat = dustRef.current.material as THREE.PointsMaterial;
+      mat.opacity = opacity * 0.6;
     }
 
-    // Bobbing bintang — baseline Y diatur di sini, bukan di JSX
-    if (star1Ref.current) {
-      star1Ref.current.position.y = 1.2 + Math.sin(t * 0.7 + 0.5) * 0.15;
-    }
-    if (star2Ref.current) {
-      star2Ref.current.position.y = -0.9 + Math.sin(t * 0.8 + 2.1) * 0.12;
-    }
-    if (star3Ref.current) {
-      star3Ref.current.position.y = 1.0 + Math.sin(t * 0.6 + 4.2) * 0.14;
+    // Orbit ring — muter pelan di belakang foto
+    if (ringRef.current) {
+      ringRef.current.rotation.z = t * 0.15;
+      const mat = ringRef.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = opacity * 0.25;
     }
 
     // Photo card — parallax depth effect
     if (photoGroupRef.current) {
-      // Subtle bobbing biar foto ikut "hidup" kaya objek lain
       photoGroupRef.current.position.y = Math.sin(t * 0.4) * 0.05;
 
-      // Tilt ngikutin cursor, di-lerp biar smooth — bikin kesan depth
       const targetTiltX = state.pointer.y * 0.08;
       const targetTiltY = state.pointer.x * 0.1;
       photoGroupRef.current.rotation.x = THREE.MathUtils.lerp(
@@ -152,7 +244,6 @@ export default function WardekaTrophy({
       );
     }
 
-    // Glow plate bergerak sedikit lebih lambat dari foto depan → parallax
     if (photoGlowRef.current) {
       const glowTiltX = state.pointer.y * 0.04;
       const glowTiltY = state.pointer.x * 0.05;
@@ -171,50 +262,116 @@ export default function WardekaTrophy({
 
   return (
     <group ref={groupRef} position={[1.1, -0.3, 0]}>
-      {/* FOTO WARDEKA — centerpiece, landscape orientation */}
+      {/* FOTO WARDEKA — centerpiece, landscape orientation, dengan HUD frame */}
       <group ref={photoGroupRef} position={[-0.05, 0, 0.2]}>
-        {/* Glow plate di belakang — sedikit lebih besar & lebih jauh di Z */}
-        <mesh ref={photoGlowRef} position={[0, 0.2, -0.02]}>
-          <planeGeometry args={[3.3, 2]} />
+        <mesh ref={photoGlowRef} position={[0, 0.2, -0.05]}>
+          <planeGeometry args={[3.15, 1.9]} />
           <meshBasicMaterial
             color="#00d2ff"
             transparent
             opacity={0.5}
             toneMapped={false}
+            depthWrite={false}
           />
         </mesh>
 
-        {/* Foto di depan — landscape 16:9-ish, sesuaikan args ke aspect ratio asli fotomu */}
-        <mesh ref={photoFrontRef} position={[0, 0.2, -0.01]}>
+        <mesh ref={photoFrontRef} position={[0, 0.2, 0]}>
           <planeGeometry args={[3, 1.75]} />
           <meshBasicMaterial
             map={photoTexture}
             transparent
             toneMapped={false}
+            depthWrite={false}
           />
         </mesh>
+
+        {/* HUD corner brackets — 4 sudut, masing-masing 2 garis pendek */}
+        {HUD_CORNERS.map(([bx, by], i) => (
+          <group key={i} position={[bx, by + 0.2, 0.01]}>
+            <mesh position={[bx > 0 ? -0.1 : 0.1, 0, 0]}>
+              <planeGeometry args={[0.2, 0.015]} />
+              <meshBasicMaterial color="#00d2ff" toneMapped={false} />
+            </mesh>
+            <mesh position={[0, by > 0.2 ? -0.1 : 0.1, 0]}>
+              <planeGeometry args={[0.015, 0.2]} />
+              <meshBasicMaterial color="#00d2ff" toneMapped={false} />
+            </mesh>
+          </group>
+        ))}
       </group>
 
-      {/* GAMEPAD — tidak diubah */}
-      <group ref={gamepadRef} position={[-1.7, 0, 0.8]}>
-        <primitive object={gamepadGltf.scene} scale={0.6} />
-      </group>
+      {/* Orbit ring — tipis, di belakang foto, muter pelan */}
+      <mesh ref={ringRef} position={[-0.05, 0.2, -0.15]}>
+        <ringGeometry args={[1.7, 1.72, 64]} />
+        <meshBasicMaterial
+          color="#00d2ff"
+          transparent
+          opacity={0}
+          toneMapped={false}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
 
-      {/* BINTANG — 3 buah, disebar mengelilingi foto */}
-      <group ref={star1Ref} position={[1.7, 0, 0.4]}>
-        <primitive object={star1Scene} scale={0.35} />
-      </group>
+      {/* Garis constellation — menghubungkan tiap bintang */}
+      <lineSegments>
+        <bufferGeometry>
+          <bufferAttribute
+            attach="attributes-position"
+            count={constellationPositions.length / 3}
+            array={constellationPositions}
+            itemSize={3}
+          />
+        </bufferGeometry>
+        <lineBasicMaterial
+          color="#00d2ff"
+          transparent
+          opacity={0.15}
+          toneMapped={false}
+        />
+      </lineSegments>
 
-      <group ref={star2Ref} position={[1.5, 0, 0.4]}>
-        <primitive object={star2Scene} scale={0.18} />
-      </group>
+      {/* Ambient dust — titik melayang, kasih kedalaman di background */}
+      <points ref={dustRef}>
+        <bufferGeometry>
+          <bufferAttribute
+            attach="attributes-position"
+            count={dustPositions.length / 3}
+            array={dustPositions}
+            itemSize={3}
+          />
+        </bufferGeometry>
+        <pointsMaterial
+          color="#88ccff"
+          size={0.025}
+          transparent
+          opacity={0}
+          sizeAttenuation
+          toneMapped={false}
+        />
+      </points>
 
-      <group ref={star3Ref} position={[-1.8, 0, 0.4]}>
-        <primitive object={star3Scene} scale={0.22} />
-      </group>
+      {/* BINTANG — jumlah & posisi diatur lewat STAR_CONFIG di atas */}
+      {STAR_CONFIG.map((cfg, i) => (
+        <group
+          key={i}
+          ref={(el) => {
+            starRefs.current[i] = el;
+          }}
+          position={[cfg.x, cfg.y, cfg.z]}
+        >
+          <primitive object={starScenes[i]} scale={cfg.scale} />
+          <pointLight
+            ref={(el) => {
+              glowRefs.current[i] = el;
+            }}
+            color="#00d2ff"
+            intensity={0}
+            distance={2}
+          />
+        </group>
+      ))}
     </group>
   );
 }
 
-useGLTF.preload("/models/wardeka-gamepad.glb");
 useGLTF.preload("/models/wardeka-star.glb");

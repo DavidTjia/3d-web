@@ -49,7 +49,7 @@ export default function Home() {
       },
     });
 
-    // Progress khusus buat GERAKAN OBJEK 3D (piala, senjata, bintang) — tetap
+    // Progress khusus buat GERAKAN OBJEK 3D (bintang, dsb) — tetap
     // scrub terus-menerus sepanjang section, karena mereka emang perlu ngikutin
     // posisi scroll real-time buat muter/geser.
     const wardekaTrigger = ScrollTrigger.create({
@@ -62,11 +62,8 @@ export default function Home() {
       },
     });
 
-    // Fade teks — DIPISAH dari progress di atas. Ini animasi "masuk" yang
-    // sederhana: begitu section udah kelihatan ±25% dari bawah layar, teks
-    // fade-in sekali (1 detik), lalu diam di situ. Nggak lagi nunggu progress
-    // scroll mencapai angka tertentu dulu — jadi kerasa kayak fade-in biasa,
-    // bukan animasi yang "nunggu" posisi scroll spesifik.
+    // Fade teks — begitu section udah kelihatan ±25% dari bawah layar, teks
+    // fade-in sekali (1 detik), lalu diam di situ.
     let fadeAnim: gsap.core.Tween | undefined;
     if (wardekaTextRef.current) {
       gsap.set(wardekaTextRef.current, { opacity: 0, y: 24 });
@@ -78,7 +75,6 @@ export default function Home() {
         scrollTrigger: {
           trigger: "#wardeka-section",
           start: "top 75%",
-          // play saat masuk, reverse (fade out lagi) kalau di-scroll balik ke atas
           toggleActions: "play none none reverse",
         },
       });
@@ -175,34 +171,44 @@ export default function Home() {
                       Wardeka <span className="text-cyan-glow">Edonisia</span>
                     </h2>
 
-                    <p className="font-body text-gray-300 text-base md:text-lg leading-relaxed mb-7 max-w-xl">
+                    <p className="font-body text-gray-300 text-base md:text-lg leading-relaxed mb-8 max-w-xl">
                       Game esports shooter mobile pertama karya Indonesia,
                       dikembangkan Big Dade Interactive di bawah PT Kawanua
                       Virtual Teknologi.
                     </p>
 
-                    <div className="space-y-4 mb-7 max-w-xl">
-                      <div className="border-l-2 border-cyan-glow/40 pl-4">
-                        <p className="text-xs uppercase tracking-[0.2em] text-gray-500 mb-1.5">
-                          Tantangan
+                    {/* STAT CALLOUT: angka besar sebagai hook, sebelum narasi panjang */}
+                    <div className="flex items-end gap-8 mb-8 max-w-xl border-l-2 border-cyan-glow/40 pl-5">
+                      <div>
+                        <p className="font-display text-3xl md:text-4xl font-bold text-white leading-none">
+                          95%
                         </p>
-                        <p className="font-body text-gray-400 text-base leading-relaxed">
-                          Dari Rp33 triliun pasar game Indonesia, 95% direbut
-                          developer luar negeri — Indonesia lebih banyak jadi
-                          penonton ketimbang pemain di industrinya sendiri.
+                        <p className="text-xs text-gray-500 mt-1.5 max-w-[140px] leading-snug">
+                          pasar game Indonesia (Rp33T) direbut developer asing
+                        </p>
+                      </div>
+                      <div>
+                        <p className="font-display text-3xl md:text-4xl font-bold text-cyan-glow leading-none">
+                          5%
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1.5 max-w-[140px] leading-snug">
+                          sisanya untuk developer lokal
                           <span className="text-gray-600">
                             {" "}
-                            (detikINET, April 2025)
+                            (detikINET, Apr 2025)
                           </span>
                         </p>
                       </div>
+                    </div>
+
+                    <div className="space-y-4 mb-8 max-w-xl">
                       <div className="border-l-2 border-cyan-glow/40 pl-4">
                         <p className="text-xs uppercase tracking-[0.2em] text-gray-500 mb-1.5">
                           Solusi
                         </p>
                         <p className="font-body text-gray-400 text-base leading-relaxed">
                           Game shooter dengan karakter, senjata, skin, dan
-                          cerita bernuansa budaya Indonesia — arena futuristik,
+                          cerita bernuansa budaya Indonesia: arena futuristik,
                           karakter berbahasa Indonesia, enam ability unik (Fast,
                           Scan, Invisible, Heal, Shield, Stun), dirancang untuk
                           turnamen esports nasional & internasional.
@@ -210,47 +216,73 @@ export default function Home() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-x-6 gap-y-3 mb-7 max-w-xl text-sm text-gray-400">
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-3 mb-8 max-w-xl text-sm text-gray-400">
                       <p>
-                        ⚙ Game client + PC client turnamen skala
+                        Game client + PC client turnamen skala
                         nasional/internasional
                       </p>
                       <p>
-                        ⚙ Dashboard & analytic custom (performa, item,
-                        penjualan)
+                        Dashboard & analytic custom: performa, item, banner,
+                        penjualan
                       </p>
                       <p>
-                        ⚙ Cloud architecture sendiri — &quot;Delta Garuda&quot;,
-                        7 tahun pengembangan
+                        Cloud architecture sendiri,{" "}
+                        <span className="text-gray-300">
+                          &quot;Delta Garuda&quot;
+                        </span>
+                        , dikembangkan selama 7 tahun
                       </p>
                       <p>
-                        ⚙ 86 item fashion · 57 skin senjata · battlepass · gacha
+                        86 item fashion · 57 skin senjata · battlepass · gacha
                         system
                       </p>
                     </div>
 
-                    <div className="mb-7 max-w-xl">
-                      <p className="text-xs uppercase tracking-[0.2em] text-gray-500 mb-2.5">
+                    {/* PENCAPAIAN: numbered list, bukan pill-wall */}
+                    <div className="mb-8 max-w-xl">
+                      <p className="text-xs uppercase tracking-[0.2em] text-gray-500 mb-3">
                         Pencapaian
                       </p>
-                      <div className="flex flex-wrap gap-2">
-                        {[
-                          "Cabang esports resmi — PON 2024/2025",
-                          "Piala Presiden Esports 2024",
-                          "Cabang olahraga — PORPROV XII Sulut 2025",
-                          "Juara Nasional AKI 2023",
-                          "Apresiasi 5 Menteri + Wapres + Gubernur Sulut",
-                          "Turnamen shooter lokal pertama — Sabang–Merauke",
-                          "Diliput ratusan media nasional",
-                        ].map((item) => (
-                          <span
-                            key={item}
-                            className="text-xs text-gray-300 bg-white/5 border border-white/10 rounded-full px-3.5 py-1.5"
-                          >
-                            {item}
+                      <ol className="space-y-2.5 text-sm text-gray-300">
+                        <li className="flex gap-3">
+                          <span className="text-cyan-glow font-mono text-xs mt-0.5">
+                            01
                           </span>
-                        ))}
-                      </div>
+                          Cabang esports resmi: PON 2024/2025 & Piala Presiden
+                          Esports 2024
+                        </li>
+                        <li className="flex gap-3">
+                          <span className="text-cyan-glow font-mono text-xs mt-0.5">
+                            02
+                          </span>
+                          Cabang olahraga resmi di PORPROV XII Sulawesi Utara
+                          2025
+                        </li>
+                        <li className="flex gap-3">
+                          <span className="text-cyan-glow font-mono text-xs mt-0.5">
+                            03
+                          </span>
+                          Juara Nasional AKI (Asosiasi Kreasi Indonesia) 2023,
+                          mewakili Sulut
+                        </li>
+                        <li className="flex gap-3">
+                          <span className="text-cyan-glow font-mono text-xs mt-0.5">
+                            04
+                          </span>
+                          Apresiasi Menpar, Menpora, Menekraf, Menkominfo +
+                          Wapres + Gubernur Sulut
+                        </li>
+                        <li className="flex gap-3">
+                          <span className="text-cyan-glow font-mono text-xs mt-0.5">
+                            05
+                          </span>
+                          Turnamen shooter lokal pertama Indonesia, dengan
+                          peserta dari Sabang sampai Merauke
+                        </li>
+                      </ol>
+                      <p className="text-xs text-gray-600 mt-3 pl-6">
+                        + diliput ratusan media nasional
+                      </p>
                     </div>
 
                     <div className="max-w-xl">
@@ -258,8 +290,8 @@ export default function Home() {
                         Ke depan:{" "}
                         <span className="text-cyan-glow not-italic">
                           Wardeka World War 2025
-                        </span>{" "}
-                        — target 1% market share game Indonesia.
+                        </span>
+                        , dengan target 1% market share game Indonesia.
                       </p>
                     </div>
                   </div>

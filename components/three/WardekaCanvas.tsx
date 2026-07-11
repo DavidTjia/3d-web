@@ -33,8 +33,14 @@ export default function WardekaCanvas({
         </Suspense>
       </Canvas>
 
-      {/* Teks sekarang di dalam sticky wrapper yang sama — ikut nempel bareng objek 3D */}
-      <div className="absolute inset-0 z-10">{children}</div>
+      {/* pointer-events-none di sini penting — tanpa ini, div overlay ini
+          nyerap semua event mouse duluan sebelum sempat sampai ke Canvas
+          di bawahnya, jadi state.pointer di R3F nggak pernah ke-update.
+          Kalau ada elemen interaktif (tombol, link) di dalam children,
+          kasih pointer-events-auto khusus di elemen itu. */}
+      <div className="absolute inset-0 z-10 pointer-events-none">
+        {children}
+      </div>
     </div>
   );
 }
