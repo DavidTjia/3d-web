@@ -1,15 +1,17 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
-import { Suspense } from "react";
+import { Suspense, ReactNode } from "react";
 import WardekaTrophy from "./WardekaTrophy";
 
 interface WardekaCanvasProps {
   scrollProgressRef: React.RefObject<number>;
+  children?: ReactNode;
 }
 
 export default function WardekaCanvas({
   scrollProgressRef,
+  children,
 }: WardekaCanvasProps) {
   return (
     <div className="sticky top-0 h-screen w-full">
@@ -21,6 +23,7 @@ export default function WardekaCanvas({
           powerPreference: "high-performance",
         }}
         dpr={[1, 1.5]}
+        className="absolute inset-0"
       >
         <ambientLight intensity={0.5} color="#88aaff" />
         <directionalLight position={[3, 4, 5]} intensity={1.2} />
@@ -29,6 +32,9 @@ export default function WardekaCanvas({
           <WardekaTrophy scrollProgressRef={scrollProgressRef} />
         </Suspense>
       </Canvas>
+
+      {/* Teks sekarang di dalam sticky wrapper yang sama — ikut nempel bareng objek 3D */}
+      <div className="absolute inset-0 z-10">{children}</div>
     </div>
   );
 }
