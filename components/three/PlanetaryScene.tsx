@@ -391,7 +391,12 @@ export default function PlanetaryScene({ scrollProgressRef }: PlanetarySceneProp
     const time   = state.clock.getElapsedTime();
     const scroll = scrollProgressRef.current ?? 0;
 
-    if (saturnMat.uniforms) saturnMat.uniforms.uTime.value = time;
+    if (saturnBodyRef.current) {
+      const mat = saturnBodyRef.current.material as THREE.ShaderMaterial;
+      if (mat && mat.uniforms) {
+        mat.uniforms.uTime.value = time;
+      }
+    }
 
     // Saturn group (body + rings rotate together)
     if (saturnRef.current) {

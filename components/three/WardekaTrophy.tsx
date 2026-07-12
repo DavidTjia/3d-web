@@ -24,13 +24,26 @@ const STAR_CONFIG = [
   { x: -2.2, y: 0.1, z: 0.2, scale: 0.22, bobSpeed: 0.65, bobPhase: 5.5 },
 ];
 
-// Posisi 4 sudut HUD bracket di foto, [x, y] relatif ke pusat photoGroupRef
+// Posisi 4 sudut HUD bracket di foto — [x, y] relatif ke pusat photoGroupRef
+// Berdasarkan ukuran photo card yang baru (W=2.5, H=1.46) dengan margin padding 0.05
 const HUD_CORNERS: [number, number][] = [
-  [-1.5, 1.075],
-  [1.5, 1.075],
-  [-1.5, -0.675],
-  [1.5, -0.675],
+  [-1.3, 0.78],
+  [1.3, 0.78],
+  [-1.3, -0.78],
+  [1.3, -0.78],
 ];
+
+// Generate static dust positions outside the component to keep rendering pure
+const DUST_POSITIONS = (() => {
+  const count = 60;
+  const positions = new Float32Array(count * 3);
+  for (let i = 0; i < count; i++) {
+    positions[i * 3] = (Math.random() - 0.5) * 8;
+    positions[i * 3 + 1] = (Math.random() - 0.5) * 5;
+    positions[i * 3 + 2] = (Math.random() - 0.5) * 3 - 1;
+  }
+  return positions;
+})();
 
 // Helper: update scale + glow intensity berdasarkan jarak cursor ke bintang (NDC space)
 function updateStarProximity(
@@ -93,7 +106,7 @@ export default function WardekaTrophy({
     [starGltf.scene],
   );
 
-  useMemo(() => {
+  useEffect(() => {
     const mats: THREE.Material[] = [];
     const collect = (root: THREE.Object3D) => {
       root.traverse((child) => {
@@ -115,17 +128,8 @@ export default function WardekaTrophy({
     materialsRef.current = mats;
   }, [starScenes]);
 
-  // Posisi dust particle, di-generate sekali, melayang random di sekitar scene
-  const dustPositions = useMemo(() => {
-    const count = 60;
-    const positions = new Float32Array(count * 3);
-    for (let i = 0; i < count; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 8;
-      positions[i * 3 + 1] = (Math.random() - 0.5) * 5;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 3 - 1;
-    }
-    return positions;
-  }, []);
+  // Posisi dust particle — di-generate sekali, melayang random di sekitar scene
+  const dustPositions = DUST_POSITIONS;
 
   // Garis constellation, menghubungkan tiap bintang ke bintang berikutnya
   const constellationPositions = useMemo(() => {
@@ -172,9 +176,21 @@ export default function WardekaTrophy({
     const t = state.clock.elapsedTime;
     const scroll = scrollProgressRef.current ?? 0;
 
-    // Opacity fade DULUAN, biar bisa dipakai buat "kunci" rotasi & tilt
-    // di bawah, supaya nggak ada gerakan yang udah "jalan duluan" sebelum
-    // objeknya betul-betul kelihatan di layar.
+    // Scroll-linked orbit rotation — seluruh koleksi berputar mengikuti scroll
+    // Ketika section sticky dan user membaca teks (scroll 0.38 s.d. 0.62), gambar lurus (rotation Y = 0).
+    // Ketika di-scroll ke atas (< 0.38) berputar ke kiri, ketika di-scroll ke bawah (> 0.62) berputar ke kanan.
+    const maxRotation = Math.PI * 0.35;
+    let rotY = 0;
+    if (scroll < 0.38) {
+      rotY = (scroll / 0.38 - 1) * maxRotation;
+    } else if (scroll > 0.62) {
+      rotY = ((scroll - 0.62) / 0.38) * maxRotation;
+    } else {
+      rotY = 0;
+    }
+    groupRef.current.rotation.y = rotY;
+
+    // Opacity fade (dari materialsRef, khusus GLTF meshes)
     const opacity = fadeState.current.opacity;
     materialsRef.current.forEach((m) => {
       m.opacity = opacity;
@@ -267,11 +283,11 @@ export default function WardekaTrophy({
   });
 
   return (
-    <group ref={groupRef} position={[1.1, -0.3, 0]}>
-      {/* FOTO WARDEKA, centerpiece, landscape orientation, dengan HUD frame */}
+    <group ref={groupRef} position={[1.4, -0.3, 0]}>
+      {/* FOTO WARDEKA — centerpiece, landscape orientation, dengan HUD frame */}
       <group ref={photoGroupRef} position={[-0.05, 0, 0.2]}>
         <mesh ref={photoGlowRef} position={[0, 0.2, -0.05]}>
-          <planeGeometry args={[3.15, 1.9]} />
+          <planeGeometry args={[2.625, 1.58]} />
           <meshBasicMaterial
             color="#00d2ff"
             transparent
@@ -282,7 +298,7 @@ export default function WardekaTrophy({
         </mesh>
 
         <mesh ref={photoFrontRef} position={[0, 0.2, 0]}>
-          <planeGeometry args={[3, 1.75]} />
+          <planeGeometry args={[2.5, 1.46]} />
           <meshBasicMaterial
             map={photoTexture}
             transparent
@@ -308,7 +324,7 @@ export default function WardekaTrophy({
 
       {/* Orbit ring, tipis, di belakang foto, muter pelan */}
       <mesh ref={ringRef} position={[-0.05, 0.2, -0.15]}>
-        <ringGeometry args={[1.7, 1.72, 64]} />
+        <ringGeometry args={[1.45, 1.47, 64]} />
         <meshBasicMaterial
           color="#00d2ff"
           transparent
@@ -323,9 +339,7 @@ export default function WardekaTrophy({
         <bufferGeometry>
           <bufferAttribute
             attach="attributes-position"
-            count={constellationPositions.length / 3}
-            array={constellationPositions}
-            itemSize={3}
+            args={[constellationPositions, 3]}
           />
         </bufferGeometry>
         <lineBasicMaterial
@@ -341,9 +355,7 @@ export default function WardekaTrophy({
         <bufferGeometry>
           <bufferAttribute
             attach="attributes-position"
-            count={dustPositions.length / 3}
-            array={dustPositions}
-            itemSize={3}
+            args={[dustPositions, 3]}
           />
         </bufferGeometry>
         <pointsMaterial
