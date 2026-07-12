@@ -4,11 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import SpaceCanvas from "@/components/three/SpaceCanvas";
 import WardekaCanvas from "@/components/three/WardekaCanvas";
 import VRCanvas from "@/components/three/VRCanvas";
+import AwardsCanvas from "@/components/three/AwardsCanvas";
 import CustomCursor from "@/components/ui/CustomCursor";
 import SpiderCreature from "@/components/ui/SpiderCreature";
 import SmoothScroll from "@/components/ui/SmoothScroll";
 import RocketLoader from "@/components/ui/RocketLoader";
 import Navbar from "@/components/ui/Navbar";
+import RecognitionList from "@/components/ui/RecognitionList";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -31,6 +33,7 @@ export default function Home() {
   const scrollProgressRef = useRef<number>(0);
   const wardekaProgressRef = useRef<number>(0);
   const vrProgressRef = useRef<number>(0);
+  const awardsProgressRef = useRef<number>(0);
   // Full-page 0→1 scroll progress used exclusively by SpaceCanvas background camera
   const bgScrollRef = useRef<number>(0);
   const heroRef = useRef<HTMLDivElement>(null);
@@ -69,11 +72,6 @@ export default function Home() {
       },
     });
 
-<<<<<<< HEAD
-    // Progress KHUSUS buat GERAKAN OBJEK 3D — tetap pakai rentang pin
-    // (top top -> bottom bottom), karena objeknya sticky dan cuma "aktif"
-    // gerak selama section itu nempel di atas layar.
-=======
     // Full-page progress for background camera — covers entire scrollable height
     const bgTrigger = ScrollTrigger.create({
       trigger: document.documentElement,
@@ -88,7 +86,6 @@ export default function Home() {
     // Progress khusus buat GERAKAN OBJEK 3D (bintang, dsb) — tetap
     // scrub terus-menerus sepanjang section, karena mereka emang perlu ngikutin
     // posisi scroll real-time buat muter/geser.
->>>>>>> 81a052e79bf2e07c268f8e4d26c2291c4acf9cc5
     const wardekaTrigger = ScrollTrigger.create({
       trigger: "#wardeka-section",
       start: "top bottom",
@@ -117,6 +114,30 @@ export default function Home() {
       },
     });
 
+    // FIX: section VR sebelumnya gak punya trigger buat update progress-nya
+    // sendiri, jadi vrProgressRef.current selalu 0 dan objek 3D VR gak
+    // pernah react ke scroll sama sekali.
+    const vrTrigger = ScrollTrigger.create({
+      trigger: "#vr-section",
+      start: "top bottom",
+      end: "bottom top",
+      scrub: true,
+      onUpdate: (self) => {
+        vrProgressRef.current = self.progress;
+      },
+    });
+
+    // Progress khusus buat section Awards & Recognition (constellation drift)
+    const awardsTrigger = ScrollTrigger.create({
+      trigger: "#awards-section",
+      start: "top bottom",
+      end: "bottom top",
+      scrub: true,
+      onUpdate: (self) => {
+        awardsProgressRef.current = self.progress;
+      },
+    });
+
     let vrFadeAnim: gsap.core.Tween | undefined;
     if (vrTextRef.current) {
       gsap.set(vrTextRef.current, { opacity: 0, y: 24 });
@@ -140,6 +161,8 @@ export default function Home() {
       bgTrigger.kill();
       wardekaTrigger.kill();
       wardekaFadeTrigger.kill();
+      vrTrigger.kill();
+      awardsTrigger.kill();
       cancelAnimationFrame(raf);
     };
   }, [mainVisible]);
@@ -162,7 +185,10 @@ export default function Home() {
         }}
       >
         <SmoothScroll>
-          <SpaceCanvas scrollProgressRef={scrollProgressRef} bgScrollRef={bgScrollRef} />
+          <SpaceCanvas
+            scrollProgressRef={scrollProgressRef}
+            bgScrollRef={bgScrollRef}
+          />
           <Navbar />
           <SpiderCreature scrollProgressRef={scrollProgressRef} />
           <CustomCursor />
@@ -350,6 +376,16 @@ export default function Home() {
                 </div>
               </VRCanvas>
             </section>
+
+            {/* SECTION: AWARDS & RECOGNITION */}
+            <section id="awards-section" className="relative w-full h-[160vh]">
+              <AwardsCanvas scrollProgressRef={awardsProgressRef} />
+            </section>
+
+            {/* Milestone/recognition tambahan — statis, alur scroll normal,
+                bukan di dalam sticky canvas. Lihat rationale HCI di
+                RecognitionList.tsx. */}
+            <RecognitionList />
 
             {/* SECTION: TRANSITION & DEMO CARD */}
             <section className="relative flex min-h-screen w-full items-center justify-center px-6 py-24 bg-transparent">
