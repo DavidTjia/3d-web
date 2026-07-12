@@ -215,12 +215,18 @@ export default function RocketLoader({ onComplete }: RocketLoaderProps) {
 
   const [statusText, setStatusText] = useState('Awaiting Launch Sequence');
   const onCompleteRef = useRef(onComplete);
-  onCompleteRef.current = onComplete;
+  
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   useEffect(() => {
-    setMounted(true);
+    const handle = requestAnimationFrame(() => setMounted(true));
     document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = ''; };
+    return () => {
+      cancelAnimationFrame(handle);
+      document.body.style.overflow = '';
+    };
   }, []);
 
   useEffect(() => {
