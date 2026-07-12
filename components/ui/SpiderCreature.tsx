@@ -44,9 +44,9 @@ function snoise(x: number, y: number) {
 }
 
 // ─── Config ─────────────────────────────────────────────────────────────
-const STAR_COUNT = 700;
-const CLUSTER_COUNT = 12;
-const ACTIVE_RADIUS = 190; // px — reduced to avoid cramped edge clusters
+const STAR_COUNT = 1200;
+const CLUSTER_COUNT = 14;
+const ACTIVE_RADIUS = 220; // px — slightly increased to ensure legs find stars in all areas
 const HEAD_LERP = 0.055;
 const FADE_IN_STEP = 0.22;
 const FADE_OUT_K = 0.38;
@@ -87,12 +87,17 @@ function buildStars(W: number, H: number) {
   const centers = Array.from({ length: CLUSTER_COUNT }, () => ({
     x: Math.random() * W,
     y: Math.random() * H,
-    std: 50 + Math.random() * 150,
+    std: 60 + Math.random() * 140,
     w: 0.4 + Math.random() * 1.6,
   }));
   const totalW = centers.reduce((s, c) => s + c.w, 0);
 
-  STARS = Array.from({ length: STAR_COUNT }, (_, i) => {
+  const clusteredCount = Math.floor(STAR_COUNT * 0.6);
+  const uniformCount = STAR_COUNT - clusteredCount;
+  const list: Star[] = [];
+
+  // 1. Clustered stars (Gaussian distribution around random centers)
+  for (let i = 0; i < clusteredCount; i++) {
     let r = Math.random() * totalW;
     let cl = centers[0];
     for (const c of centers) {
@@ -119,15 +124,45 @@ function buildStars(W: number, H: number) {
       radius = 2.5 + Math.random() * 1.5;
     }
 
-    return {
+    list.push({
       x,
       y,
       r: radius,
       tier,
       phase: (i * 1.618033) % (Math.PI * 2),
       speed: 0.4 + Math.random() * 1.4,
-    };
-  });
+    });
+  }
+
+  // 2. Uniform stars (distributed evenly to guarantee legs anywhere on screen)
+  for (let i = 0; i < uniformCount; i++) {
+    const x = Math.random() * W;
+    const y = Math.random() * H;
+
+    const roll = Math.random();
+    let tier: 0 | 1 | 2, radius: number;
+    if (roll < 0.96) {
+      tier = 0;
+      radius = 0.4 + Math.random() * 0.4;
+    } else if (roll < 0.99) {
+      tier = 1;
+      radius = 1.0 + Math.random() * 1.0;
+    } else {
+      tier = 2;
+      radius = 2.5 + Math.random() * 1.5;
+    }
+
+    list.push({
+      x,
+      y,
+      r: radius,
+      tier,
+      phase: ((i + clusteredCount) * 1.618033) % (Math.PI * 2),
+      speed: 0.4 + Math.random() * 1.4,
+    });
+  }
+
+  STARS = list;
 }
 
 function qbez(
