@@ -184,7 +184,7 @@ export default function WardekaTrophy({
     // Scroll-linked orbit rotation, dikali opacity biar rotasi cuma "hidup"
     // setelah objek udah kelihatan, bukan udah punya rotasi duluan dari
     // scroll value yang mulai lebih awal dari titik fade-in selesai.
-    groupRef.current.rotation.y = scroll * Math.PI * 0.35 * opacity;
+    groupRef.current.rotation.y = -scroll * Math.PI * 0.35 * opacity;
 
     // Opacity fade khusus untuk foto (material-nya di-manage terpisah)
     if (photoGlowRef.current) {
