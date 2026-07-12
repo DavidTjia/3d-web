@@ -11,6 +11,21 @@ import Navbar from "@/components/ui/Navbar";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
+// Fade in di awal, tetap penuh di tengah, fade out sebelum habis.
+// fadeInEnd/fadeOutStart dalam skala progress trigger-nya sendiri (0-1),
+// bukan skala scroll section, makanya butuh trigger terpisah dari 3D.
+function getFadeInOut(progress: number, fadeInEnd = 0.18, fadeOutStart = 0.85) {
+  let opacity = 1;
+  if (progress <= fadeInEnd) {
+    opacity = progress / fadeInEnd;
+  } else if (progress >= fadeOutStart) {
+    opacity = 1 - (progress - fadeOutStart) / (1 - fadeOutStart);
+  }
+  opacity = Math.max(0, Math.min(1, opacity));
+  const translateY = (1 - opacity) * 24;
+  return { opacity, translateY };
+}
+
 export default function Home() {
   const scrollProgressRef = useRef<number>(0);
   const wardekaProgressRef = useRef<number>(0);
@@ -49,44 +64,43 @@ export default function Home() {
       },
     });
 
-    // Progress khusus buat GERAKAN OBJEK 3D (bintang, dsb) — tetap
-    // scrub terus-menerus sepanjang section, karena mereka emang perlu ngikutin
-    // posisi scroll real-time buat muter/geser.
+    // Progress KHUSUS buat GERAKAN OBJEK 3D — tetap pakai rentang pin
+    // (top top -> bottom bottom), karena objeknya sticky dan cuma "aktif"
+    // gerak selama section itu nempel di atas layar.
     const wardekaTrigger = ScrollTrigger.create({
       trigger: "#wardeka-section",
-      start: "top top",
-      end: "bottom bottom",
+      start: "top bottom",
+      end: "bottom top",
       scrub: true,
       onUpdate: (self) => {
         wardekaProgressRef.current = self.progress;
       },
     });
 
-    // Fade teks — begitu section udah kelihatan ±25% dari bawah layar, teks
-    // fade-in sekali (1 detik), lalu diam di situ.
-    let fadeAnim: gsap.core.Tween | undefined;
-    if (wardekaTextRef.current) {
-      gsap.set(wardekaTextRef.current, { opacity: 0, y: 24 });
-      fadeAnim = gsap.to(wardekaTextRef.current, {
-        opacity: 1,
-        y: 0,
-        duration: 1,
-        ease: "power2.out",
-        scrollTrigger: {
-          trigger: "#wardeka-section",
-          start: "top 75%",
-          toggleActions: "play none none reverse",
-        },
-      });
-    }
+    // Progress KHUSUS buat fade in/out TEKS — rentang jauh lebih lebar,
+    // dari section mulai kelihatan di bawah layar sampai section sepenuhnya
+    // keluar dari atas layar. Ini yang bikin fade-in kerasa "pas waktu",
+    // bukan nunggu section pin dulu baru muncul.
+    const wardekaFadeTrigger = ScrollTrigger.create({
+      trigger: "#wardeka-section",
+      start: "top bottom",
+      end: "bottom top",
+      scrub: true,
+      onUpdate: (self) => {
+        if (wardekaTextRef.current) {
+          const { opacity, translateY } = getFadeInOut(self.progress);
+          wardekaTextRef.current.style.opacity = opacity.toString();
+          wardekaTextRef.current.style.transform = `translate3d(0, ${translateY}px, 0)`;
+        }
+      },
+    });
 
     const raf = requestAnimationFrame(() => ScrollTrigger.refresh());
 
     return () => {
       trigger.kill();
       wardekaTrigger.kill();
-      fadeAnim?.scrollTrigger?.kill();
-      fadeAnim?.kill();
+      wardekaFadeTrigger.kill();
       cancelAnimationFrame(raf);
     };
   }, [mainVisible]);
@@ -177,35 +191,8 @@ export default function Home() {
                       Virtual Teknologi.
                     </p>
 
-                    {/* STAT CALLOUT: angka besar sebagai hook, sebelum narasi panjang */}
-                    <div className="flex items-end gap-8 mb-8 max-w-xl border-l-2 border-cyan-glow/40 pl-5">
-                      <div>
-                        <p className="font-display text-3xl md:text-4xl font-bold text-white leading-none">
-                          95%
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1.5 max-w-[140px] leading-snug">
-                          pasar game Indonesia (Rp33T) direbut developer asing
-                        </p>
-                      </div>
-                      <div>
-                        <p className="font-display text-3xl md:text-4xl font-bold text-cyan-glow leading-none">
-                          5%
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1.5 max-w-[140px] leading-snug">
-                          sisanya untuk developer lokal
-                          <span className="text-gray-600">
-                            {" "}
-                            (detikINET, Apr 2025)
-                          </span>
-                        </p>
-                      </div>
-                    </div>
-
                     <div className="space-y-4 mb-8 max-w-xl">
                       <div className="border-l-2 border-cyan-glow/40 pl-4">
-                        <p className="text-xs uppercase tracking-[0.2em] text-gray-500 mb-1.5">
-                          Solusi
-                        </p>
                         <p className="font-body text-gray-400 text-base leading-relaxed">
                           Game shooter dengan karakter, senjata, skin, dan
                           cerita bernuansa budaya Indonesia: arena futuristik,
@@ -238,7 +225,6 @@ export default function Home() {
                       </p>
                     </div>
 
-                    {/* PENCAPAIAN: numbered list, bukan pill-wall */}
                     <div className="mb-8 max-w-xl">
                       <p className="text-xs uppercase tracking-[0.2em] text-gray-500 mb-3">
                         Pencapaian
@@ -280,19 +266,6 @@ export default function Home() {
                           peserta dari Sabang sampai Merauke
                         </li>
                       </ol>
-                      <p className="text-xs text-gray-600 mt-3 pl-6">
-                        + diliput ratusan media nasional
-                      </p>
-                    </div>
-
-                    <div className="max-w-xl">
-                      <p className="font-body text-gray-500 text-sm italic">
-                        Ke depan:{" "}
-                        <span className="text-cyan-glow not-italic">
-                          Wardeka World War 2025
-                        </span>
-                        , dengan target 1% market share game Indonesia.
-                      </p>
                     </div>
                   </div>
                 </div>

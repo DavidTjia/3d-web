@@ -13,7 +13,7 @@ interface WardekaTrophyProps {
   scrollProgressRef: React.RefObject<number>;
 }
 
-// Konfigurasi tiap bintang — posisi, scale, kecepatan bobbing, offset fase.
+// Konfigurasi tiap bintang: posisi, scale, kecepatan bobbing, offset fase.
 // Tinggal tambah/kurangi/edit baris di sini buat atur jumlah & posisi bintang.
 const STAR_CONFIG = [
   { x: 1.9, y: 1.1, z: 0.4, scale: 0.32, bobSpeed: 0.7, bobPhase: 0.5 },
@@ -24,7 +24,7 @@ const STAR_CONFIG = [
   { x: -2.2, y: 0.1, z: 0.2, scale: 0.22, bobSpeed: 0.65, bobPhase: 5.5 },
 ];
 
-// Posisi 4 sudut HUD bracket di foto — [x, y] relatif ke pusat photoGroupRef
+// Posisi 4 sudut HUD bracket di foto, [x, y] relatif ke pusat photoGroupRef
 const HUD_CORNERS: [number, number][] = [
   [-1.5, 1.075],
   [1.5, 1.075],
@@ -66,18 +66,18 @@ export default function WardekaTrophy({
 }: WardekaTrophyProps) {
   const groupRef = useRef<THREE.Group>(null);
 
-  // Refs per bintang, disimpan sebagai array — jumlahnya ngikutin STAR_CONFIG
+  // Refs per bintang, disimpan sebagai array, jumlahnya ngikutin STAR_CONFIG
   const starRefs = useRef<(THREE.Group | null)[]>([]);
   const glowRefs = useRef<(THREE.PointLight | null)[]>([]);
   const proximities = useRef(STAR_CONFIG.map(() => ({ value: 0 })));
   const tmpWorldPos = useRef(new THREE.Vector3());
 
-  // Photo card — dua layer (glow plate + foto) buat efek depth
+  // Photo card, dua layer (glow plate + foto) buat efek depth
   const photoGroupRef = useRef<THREE.Group>(null);
   const photoGlowRef = useRef<THREE.Mesh>(null);
   const photoFrontRef = useRef<THREE.Mesh>(null);
 
-  // Elemen atmosfer tambahan — ring, constellation lines, dust
+  // Elemen atmosfer tambahan: ring, constellation lines, dust
   const dustRef = useRef<THREE.Points>(null);
   const ringRef = useRef<THREE.Mesh>(null);
 
@@ -115,7 +115,7 @@ export default function WardekaTrophy({
     materialsRef.current = mats;
   }, [starScenes]);
 
-  // Posisi dust particle — di-generate sekali, melayang random di sekitar scene
+  // Posisi dust particle, di-generate sekali, melayang random di sekitar scene
   const dustPositions = useMemo(() => {
     const count = 60;
     const positions = new Float32Array(count * 3);
@@ -127,7 +127,7 @@ export default function WardekaTrophy({
     return positions;
   }, []);
 
-  // Garis constellation — menghubungkan tiap bintang ke bintang berikutnya
+  // Garis constellation, menghubungkan tiap bintang ke bintang berikutnya
   const constellationPositions = useMemo(() => {
     const pts: number[] = [];
     for (let i = 0; i < STAR_CONFIG.length; i++) {
@@ -140,7 +140,7 @@ export default function WardekaTrophy({
 
   useEffect(() => {
     // Delay dikit biar ScrollTrigger nunggu semua layout (loading screen,
-    // navbar, dll) beres dulu sebelum ngukur posisi trigger — biar gak "ngaco"
+    // navbar, dll) beres dulu sebelum ngukur posisi trigger, biar gak "ngaco"
     const setupTimeout = setTimeout(() => {
       gsap.set(fadeState.current, { opacity: 0 });
 
@@ -150,7 +150,7 @@ export default function WardekaTrophy({
         ease: "power2.out",
         scrollTrigger: {
           trigger: "#wardeka-section",
-          start: "top 90%",
+          start: "top 60%",
           end: "bottom 30%",
           toggleActions: "play reverse play reverse",
           invalidateOnRefresh: true,
@@ -172,15 +172,19 @@ export default function WardekaTrophy({
     const t = state.clock.elapsedTime;
     const scroll = scrollProgressRef.current ?? 0;
 
-    // Scroll-linked orbit rotation — seluruh koleksi berputar mengikuti scroll
-    groupRef.current.rotation.y = scroll * Math.PI * 0.35;
-
-    // Opacity fade (dari materialsRef, khusus GLTF meshes)
+    // Opacity fade DULUAN, biar bisa dipakai buat "kunci" rotasi & tilt
+    // di bawah, supaya nggak ada gerakan yang udah "jalan duluan" sebelum
+    // objeknya betul-betul kelihatan di layar.
     const opacity = fadeState.current.opacity;
     materialsRef.current.forEach((m) => {
       m.opacity = opacity;
     });
     groupRef.current.visible = opacity > 0.01;
+
+    // Scroll-linked orbit rotation, dikali opacity biar rotasi cuma "hidup"
+    // setelah objek udah kelihatan, bukan udah punya rotasi duluan dari
+    // scroll value yang mulai lebih awal dari titik fade-in selesai.
+    groupRef.current.rotation.y = scroll * Math.PI * 0.35 * opacity;
 
     // Opacity fade khusus untuk foto (material-nya di-manage terpisah)
     if (photoGlowRef.current) {
@@ -192,7 +196,7 @@ export default function WardekaTrophy({
       mat.opacity = opacity;
     }
 
-    // Bobbing + cursor-reactive twinkle — loop semua bintang di STAR_CONFIG
+    // Bobbing + cursor-reactive twinkle, loop semua bintang di STAR_CONFIG
     STAR_CONFIG.forEach((cfg, i) => {
       const star = starRefs.current[i];
       const glow = glowRefs.current[i];
@@ -212,26 +216,28 @@ export default function WardekaTrophy({
       );
     });
 
-    // Dust particle — melayang pelan, rotasi lambat
+    // Dust particle, melayang pelan, rotasi lambat
     if (dustRef.current) {
       dustRef.current.rotation.y = t * 0.02;
       const mat = dustRef.current.material as THREE.PointsMaterial;
       mat.opacity = opacity * 0.6;
     }
 
-    // Orbit ring — muter pelan di belakang foto
+    // Orbit ring, muter pelan di belakang foto
     if (ringRef.current) {
       ringRef.current.rotation.z = t * 0.15;
       const mat = ringRef.current.material as THREE.MeshBasicMaterial;
       mat.opacity = opacity * 0.25;
     }
 
-    // Photo card — parallax depth effect
+    // Photo card, parallax depth effect
     if (photoGroupRef.current) {
       photoGroupRef.current.position.y = Math.sin(t * 0.4) * 0.05;
 
-      const targetTiltX = state.pointer.y * 0.08;
-      const targetTiltY = state.pointer.x * 0.1;
+      // Dikali opacity biar tilt cuma "hidup" pas objek udah kelihatan,
+      // bukan udah ke-lerp duluan ngikutin posisi mouse pas masih invisible.
+      const targetTiltX = state.pointer.y * 0.08 * opacity;
+      const targetTiltY = state.pointer.x * 0.1 * opacity;
       photoGroupRef.current.rotation.x = THREE.MathUtils.lerp(
         photoGroupRef.current.rotation.x,
         targetTiltX,
@@ -245,8 +251,8 @@ export default function WardekaTrophy({
     }
 
     if (photoGlowRef.current) {
-      const glowTiltX = state.pointer.y * 0.04;
-      const glowTiltY = state.pointer.x * 0.05;
+      const glowTiltX = state.pointer.y * 0.04 * opacity;
+      const glowTiltY = state.pointer.x * 0.05 * opacity;
       photoGlowRef.current.rotation.x = THREE.MathUtils.lerp(
         photoGlowRef.current.rotation.x,
         glowTiltX,
@@ -262,7 +268,7 @@ export default function WardekaTrophy({
 
   return (
     <group ref={groupRef} position={[1.1, -0.3, 0]}>
-      {/* FOTO WARDEKA — centerpiece, landscape orientation, dengan HUD frame */}
+      {/* FOTO WARDEKA, centerpiece, landscape orientation, dengan HUD frame */}
       <group ref={photoGroupRef} position={[-0.05, 0, 0.2]}>
         <mesh ref={photoGlowRef} position={[0, 0.2, -0.05]}>
           <planeGeometry args={[3.15, 1.9]} />
@@ -285,7 +291,7 @@ export default function WardekaTrophy({
           />
         </mesh>
 
-        {/* HUD corner brackets — 4 sudut, masing-masing 2 garis pendek */}
+        {/* HUD corner brackets, 4 sudut, masing-masing 2 garis pendek */}
         {HUD_CORNERS.map(([bx, by], i) => (
           <group key={i} position={[bx, by + 0.2, 0.01]}>
             <mesh position={[bx > 0 ? -0.1 : 0.1, 0, 0]}>
@@ -300,7 +306,7 @@ export default function WardekaTrophy({
         ))}
       </group>
 
-      {/* Orbit ring — tipis, di belakang foto, muter pelan */}
+      {/* Orbit ring, tipis, di belakang foto, muter pelan */}
       <mesh ref={ringRef} position={[-0.05, 0.2, -0.15]}>
         <ringGeometry args={[1.7, 1.72, 64]} />
         <meshBasicMaterial
@@ -312,7 +318,7 @@ export default function WardekaTrophy({
         />
       </mesh>
 
-      {/* Garis constellation — menghubungkan tiap bintang */}
+      {/* Garis constellation, menghubungkan tiap bintang */}
       <lineSegments>
         <bufferGeometry>
           <bufferAttribute
@@ -330,7 +336,7 @@ export default function WardekaTrophy({
         />
       </lineSegments>
 
-      {/* Ambient dust — titik melayang, kasih kedalaman di background */}
+      {/* Ambient dust, titik melayang, kasih kedalaman di background */}
       <points ref={dustRef}>
         <bufferGeometry>
           <bufferAttribute
@@ -350,7 +356,7 @@ export default function WardekaTrophy({
         />
       </points>
 
-      {/* BINTANG — jumlah & posisi diatur lewat STAR_CONFIG di atas */}
+      {/* BINTANG, jumlah & posisi diatur lewat STAR_CONFIG di atas */}
       {STAR_CONFIG.map((cfg, i) => (
         <group
           key={i}
