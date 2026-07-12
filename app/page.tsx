@@ -16,6 +16,8 @@ export default function Home() {
   const scrollProgressRef = useRef<number>(0);
   const wardekaProgressRef = useRef<number>(0);
   const vrProgressRef = useRef<number>(0);
+  // Full-page 0→1 scroll progress used exclusively by SpaceCanvas background camera
+  const bgScrollRef = useRef<number>(0);
   const heroRef = useRef<HTMLDivElement>(null);
   const wardekaTextRef = useRef<HTMLDivElement>(null);
   const vrTextRef = useRef<HTMLDivElement>(null);
@@ -33,7 +35,7 @@ export default function Home() {
   useEffect(() => {
     if (!mainVisible) return;
 
-    // Hero fade/translate
+    // Hero fade/translate (still covers only first 100vh)
     const trigger = ScrollTrigger.create({
       trigger: "body",
       start: "top top",
@@ -49,6 +51,17 @@ export default function Home() {
           ).toString();
           heroRef.current.style.transform = `translate3d(0, -${self.progress * 120}px, 0)`;
         }
+      },
+    });
+
+    // Full-page progress for background camera — covers entire scrollable height
+    const bgTrigger = ScrollTrigger.create({
+      trigger: document.documentElement,
+      start: "top top",
+      end: "bottom bottom",
+      scrub: true,
+      onUpdate: (self) => {
+        bgScrollRef.current = self.progress;
       },
     });
 
@@ -113,6 +126,7 @@ export default function Home() {
 
     return () => {
       trigger.kill();
+      bgTrigger.kill();
       wardekaTrigger.kill();
       vrTrigger.kill();
       fadeAnim?.scrollTrigger?.kill();
@@ -141,7 +155,7 @@ export default function Home() {
         }}
       >
         <SmoothScroll>
-          <SpaceCanvas scrollProgressRef={scrollProgressRef} />
+          <SpaceCanvas scrollProgressRef={scrollProgressRef} bgScrollRef={bgScrollRef} />
           <Navbar />
           <SpiderCreature scrollProgressRef={scrollProgressRef} />
           <CustomCursor />
