@@ -4,6 +4,7 @@ import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { STARS, STAR_COUNT } from '@/lib/starData';
+import { camVelocitySharedRef } from './SceneContent';
 
 interface StarfieldProps {
   scrollProgressRef: React.RefObject<number>;
@@ -47,6 +48,10 @@ export default function Starfield({ scrollProgressRef }: StarfieldProps) {
     const mouseX = (pointer.x * viewport.width) / 2;
     const mouseY = (pointer.y * viewport.height) / 2;
 
+    // Smooth camera velocity → smooth star warp stretch (no discrete keyframes)
+    const vel = camVelocitySharedRef.current;
+    const warpStretch = 1 + vel * 90; // proportional to how fast camera is moving
+
     const fade = Math.max(0, 1 - scroll * 1.6);
     const scrollSpeedMul = 1 - scroll * 0.6;
 
@@ -72,7 +77,9 @@ export default function Starfield({ scrollProgressRef }: StarfieldProps) {
       }
 
       dummy.position.set(pos.x + offsetX, pos.y + offsetY, pos.z);
-      dummy.scale.setScalar(currentScale * fade);
+      // Velocity-proportional star stretch — smooth, no keyframe snapping
+      const s = currentScale * fade;
+      dummy.scale.set(s, s, s * warpStretch);
       dummy.updateMatrix();
       meshRef.current.setMatrixAt(i, dummy.matrix);
 

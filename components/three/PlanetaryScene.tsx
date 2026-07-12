@@ -12,6 +12,7 @@ import * as THREE from 'three';
 
 interface PlanetarySceneProps {
   scrollProgressRef: React.RefObject<number>;
+  bgScrollRef?: React.RefObject<number>;
 }
 
 // ─── Procedural terrain height function ─────────────────────────────────
@@ -251,14 +252,14 @@ const BLUE_PLANET_FRAG = `
   }
 `;
 
-export default function PlanetaryScene({ scrollProgressRef }: PlanetarySceneProps) {
+export default function PlanetaryScene({ scrollProgressRef, bgScrollRef }: PlanetarySceneProps) {
   // Saturn (main large planet)
   const saturnRef       = useRef<THREE.Group>(null);
   const saturnBodyRef   = useRef<THREE.Mesh>(null);
   // Blue gas giant
-  const bluePlanetRef   = useRef<THREE.Mesh>(null);
+  const bluePlanetRef   = useRef<THREE.Group>(null);
   // Small rocky planet
-  const rockyRef        = useRef<THREE.Mesh>(null);
+  const rockyRef        = useRef<THREE.Group>(null);
   const terrainGrpRef   = useRef<THREE.Group>(null);
 
   // ── Shader materials ──────────────────────────────────────────────────
@@ -389,34 +390,42 @@ export default function PlanetaryScene({ scrollProgressRef }: PlanetarySceneProp
 
   useFrame((state) => {
     const time   = state.clock.getElapsedTime();
-    const scroll = scrollProgressRef.current ?? 0;
+    // Use bgScrollRef (full-page) for planetary positioning if available,
+    // otherwise fall back to section-local scrollProgressRef.
+    const scroll = (bgScrollRef?.current ?? scrollProgressRef.current ?? 0);
 
     if (saturnBodyRef.current) {
       const mat = saturnBodyRef.current.material as THREE.ShaderMaterial;
-      if (mat && mat.uniforms) {
-        mat.uniforms.uTime.value = time;
-      }
+      if (mat && mat.uniforms) mat.uniforms.uTime.value = time;
     }
 
-    // Saturn group (body + rings rotate together)
+    // Saturn: starts top-right, sweeps left as we scroll toward Wardeka
     if (saturnRef.current) {
       saturnRef.current.rotation.y = time * 0.006;
-      saturnRef.current.position.y = 1.2 - scroll * 0.25;
+      // Peaks beautifully during Wardeka section (bg 0.24→0.62)
+      const satT = THREE.MathUtils.smoothstep(scroll, 0.0, 0.50);
+      saturnRef.current.position.y = 1.2 - satT * 1.8;
+      saturnRef.current.position.x = 3.5 - satT * 1.2;
     }
 
+    // Blue gas giant: drifts in from upper-left, peaks during VR section
     if (bluePlanetRef.current) {
       bluePlanetRef.current.rotation.y = -time * 0.005;
-      bluePlanetRef.current.position.y = 3.2 - scroll * 0.18;
+      const blueT = THREE.MathUtils.smoothstep(scroll, 0.40, 0.90);
+      bluePlanetRef.current.position.y = 3.2 - blueT * 2.2;
+      bluePlanetRef.current.position.x = -7.0 + blueT * 1.5;
     }
 
+    // Small rocky: rises from below screen edge, visible in lower sections
     if (rockyRef.current) {
       rockyRef.current.rotation.y = time * 0.009;
-      rockyRef.current.position.y = 2.8 - scroll * 0.22;
+      const rockyT = THREE.MathUtils.smoothstep(scroll, 0.10, 0.70);
+      rockyRef.current.position.y = 2.8 - rockyT * 3.5;
     }
 
     // Terrain parallax
     if (terrainGrpRef.current) {
-      terrainGrpRef.current.position.y = -scroll * 0.4;
+      terrainGrpRef.current.position.y = -scroll * 0.5;
     }
   });
 
@@ -459,40 +468,43 @@ export default function PlanetaryScene({ scrollProgressRef }: PlanetarySceneProp
           </mesh>
         </group>
       </group>
+      {/* ── Planet 2: Blue gas giant — group so halo moves with planet ── */}
+      <group ref={bluePlanetRef} position={[-7.0, 3.2, -18]}>
+        <mesh>
+          <sphereGeometry args={[2.5, 64, 64]} />
+          <primitive object={bluePlanetMat} attach="material" />
+        </mesh>
+        {/* Blue planet halo */}
+        <mesh>
+          <sphereGeometry args={[2.75, 24, 24]} />
+          <meshBasicMaterial
+            color={new THREE.Color(0.15, 0.45, 0.85)}
+            transparent opacity={0.12}
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+            side={THREE.BackSide}
+          />
+        </mesh>
+      </group>
 
-      {/* ── Planet 2: Blue gas giant — distant upper-left ────────── */}
-      <mesh ref={bluePlanetRef} position={[-7.0, 3.2, -18]}>
-        <sphereGeometry args={[2.5, 64, 64]} />
-        <primitive object={bluePlanetMat} attach="material" />
-      </mesh>
-      {/* Blue planet halo */}
-      <mesh position={[-7.0, 3.2, -18]}>
-        <sphereGeometry args={[2.75, 24, 24]} />
-        <meshBasicMaterial
-          color={new THREE.Color(0.15, 0.45, 0.85)}
-          transparent opacity={0.12}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-          side={THREE.BackSide}
-        />
-      </mesh>
-
-      {/* ── Planet 3: Small rocky planet — distant right ──────────── */}
-      <mesh ref={rockyRef} position={[8.0, 2.8, -20]}>
-        <sphereGeometry args={[1.8, 64, 64]} />
-        <primitive object={rockyMat} attach="material" />
-      </mesh>
-      {/* Rocky planet halo */}
-      <mesh position={[8.0, 2.8, -20]}>
-        <sphereGeometry args={[2.0, 20, 20]} />
-        <meshBasicMaterial
-          color={new THREE.Color(0.35, 0.45, 0.75)}
-          transparent opacity={0.10}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-          side={THREE.BackSide}
-        />
-      </mesh>
+      {/* ── Planet 3: Small rocky planet — group so halo moves with planet ── */}
+      <group ref={rockyRef} position={[8.0, 2.8, -20]}>
+        <mesh>
+          <sphereGeometry args={[1.8, 64, 64]} />
+          <primitive object={rockyMat} attach="material" />
+        </mesh>
+        {/* Rocky planet halo */}
+        <mesh>
+          <sphereGeometry args={[2.0, 20, 20]} />
+          <meshBasicMaterial
+            color={new THREE.Color(0.35, 0.45, 0.75)}
+            transparent opacity={0.10}
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+            side={THREE.BackSide}
+          />
+        </mesh>
+      </group>
 
       {/* ── Nebula haze billboards ──────────────────────────────── */}
       {nebulae.map((n, i) => (

@@ -31,6 +31,8 @@ export default function Home() {
   const scrollProgressRef = useRef<number>(0);
   const wardekaProgressRef = useRef<number>(0);
   const vrProgressRef = useRef<number>(0);
+  // Full-page 0→1 scroll progress used exclusively by SpaceCanvas background camera
+  const bgScrollRef = useRef<number>(0);
   const heroRef = useRef<HTMLDivElement>(null);
   const wardekaTextRef = useRef<HTMLDivElement>(null);
   const vrTextRef = useRef<HTMLDivElement>(null);
@@ -48,7 +50,7 @@ export default function Home() {
   useEffect(() => {
     if (!mainVisible) return;
 
-    // Hero fade/translate
+    // Hero fade/translate (still covers only first 100vh)
     const trigger = ScrollTrigger.create({
       trigger: "body",
       start: "top top",
@@ -67,9 +69,26 @@ export default function Home() {
       },
     });
 
+<<<<<<< HEAD
     // Progress KHUSUS buat GERAKAN OBJEK 3D — tetap pakai rentang pin
     // (top top -> bottom bottom), karena objeknya sticky dan cuma "aktif"
     // gerak selama section itu nempel di atas layar.
+=======
+    // Full-page progress for background camera — covers entire scrollable height
+    const bgTrigger = ScrollTrigger.create({
+      trigger: document.documentElement,
+      start: "top top",
+      end: "bottom bottom",
+      scrub: true,
+      onUpdate: (self) => {
+        bgScrollRef.current = self.progress;
+      },
+    });
+
+    // Progress khusus buat GERAKAN OBJEK 3D (bintang, dsb) — tetap
+    // scrub terus-menerus sepanjang section, karena mereka emang perlu ngikutin
+    // posisi scroll real-time buat muter/geser.
+>>>>>>> 81a052e79bf2e07c268f8e4d26c2291c4acf9cc5
     const wardekaTrigger = ScrollTrigger.create({
       trigger: "#wardeka-section",
       start: "top bottom",
@@ -118,6 +137,7 @@ export default function Home() {
 
     return () => {
       trigger.kill();
+      bgTrigger.kill();
       wardekaTrigger.kill();
       wardekaFadeTrigger.kill();
       cancelAnimationFrame(raf);
@@ -142,7 +162,7 @@ export default function Home() {
         }}
       >
         <SmoothScroll>
-          <SpaceCanvas scrollProgressRef={scrollProgressRef} />
+          <SpaceCanvas scrollProgressRef={scrollProgressRef} bgScrollRef={bgScrollRef} />
           <Navbar />
           <SpiderCreature scrollProgressRef={scrollProgressRef} />
           <CustomCursor />
