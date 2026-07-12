@@ -43,12 +43,13 @@ export default function AwardsCanvas({ scrollProgressRef }: AwardsCanvasProps) {
     // ditempatkan absolute inset-0 supaya otomatis mengisi seluruh tinggi
     // itu, jadi constellation "mengelilingi" konten di semua sisi, bukan
     // section terpisah di atas/bawah lagi.
-    // min-h ditambahkan sebagai lapisan pengaman kedua (di luar fix utama
-    // di AwardCard.tsx): memastikan tinggi total section — dan karenanya
-    // aspect ratio Canvas 3D — tetap stabil walau suatu saat ada elemen
-    // lain (bukan cuma AwardCard) yang berubah tinggi karena konten
-    // dinamis. Sesuaikan angkanya kalau layout berubah signifikan.
-    <div className="relative w-full min-h-[620px] md:min-h-[680px]">
+    // CATATAN: sempat dicoba tambah min-h di sini sebagai "pengaman", tapi
+    // itu justru bikin section punya tinggi minimum yang lebih besar dari
+    // konten aslinya — hasilnya ruang kosong nganggur di bawah sebelum
+    // RecognitionList, bukan penyempit. Dihapus karena sudah tidak perlu:
+    // AwardCard sekarang fixed height (lihat AwardCard.tsx), jadi tinggi
+    // section ini otomatis stabil murni dari flow kontennya sendiri.
+    <div className="relative w-full">
       <div className="absolute inset-0 -z-0">
         <Canvas
           camera={{ position: [0, 0, 6], fov: 45 }}
@@ -102,7 +103,7 @@ export default function AwardsCanvas({ scrollProgressRef }: AwardsCanvasProps) {
           ekstra terhadap klaster constellation kiri/kanan yang sekarang
           juga sudah digeser lebih jauh (lihat LEFT_X_CENTER/RIGHT_X_CENTER
           di AchievementConstellation.tsx). */}
-      <div className="relative z-10 max-w-lg mx-auto px-8 md:px-4 pb-28">
+      <div className="relative z-10 max-w-lg mx-auto px-8 md:px-4 pb-8">
         <AwardCard activeIndex={previewIndex} />
 
         <div

@@ -318,39 +318,40 @@ export default function Home() {
                   {/* Right column — text content */}
                   <div className="lg:col-span-6 xl:col-span-5 max-w-xl">
                     <span className="text-sm font-bold tracking-[0.35em] uppercase text-violet-400 mb-4 block">
-                      VR · Immersive Technology
+                      EdTech · VR Simulation
                     </span>
 
                     <h2 className="font-display text-4xl md:text-6xl font-bold text-white mb-5">
-                      Virtual{" "}
+                      Interactive Learning{" "}
                       <span className="text-violet-400 drop-shadow-[0_0_8px_rgba(167,139,250,0.4)]">
-                        Reality
+                        Nusa Space
                       </span>
                     </h2>
 
                     <p className="font-body text-gray-100 text-base md:text-lg leading-relaxed mb-8">
-                      Melampaui batas layar dengan teknologi Virtual Reality
-                      yang dikembangkan oleh Kawanua Virtual Teknologi.
-                      Pengalaman gaming dan simulasi yang benar-benar imersif
-                      dan menghadirkan dunia digital ke hadapan Anda secara
-                      nyata.
+                      Simulasi edukasi interaktif berbasis PC dan VR bertema
+                      eksplorasi luar angkasa, disusun oleh Big Dade Interactive
+                      di bawah PT Kawanua Virtual Teknologi. Pengguna menjalani
+                      misi berjenjang dari lokasi peluncuran hingga orbit
+                      Stasiun Luar Angkasa Internasional (ISS), lengkap dengan
+                      Player HUD dan panel progres.
                     </p>
 
                     <div className="flex items-end gap-8 mb-8 border-l-2 border-violet-400/30 pl-5">
                       <div>
                         <p className="font-display text-3xl md:text-4xl font-bold text-white leading-none">
-                          360°
+                          3
                         </p>
                         <p className="text-xs text-gray-300 mt-1.5 max-w-[130px] leading-snug">
-                          field of view immersive experience
+                          fase misi, dari landasan peluncuran hingga orbit ISS
                         </p>
                       </div>
                       <div>
                         <p className="font-display text-3xl md:text-4xl font-bold text-violet-400 leading-none">
-                          6DoF
+                          98
                         </p>
                         <p className="text-xs text-gray-300 mt-1.5 max-w-[130px] leading-snug">
-                          degrees of freedom tracking
+                          contoh skor evaluasi akhir, grade A (22/23 benar)
                         </p>
                       </div>
                     </div>
@@ -361,16 +362,18 @@ export default function Home() {
                           Fitur Utama
                         </p>
                         <p className="font-body text-gray-200 text-base leading-relaxed">
-                          Headset ringan dengan display resolusi tinggi, hand
-                          tracking tanpa controller, dan integrasi penuh dengan
-                          ekosistem game Wardeka Edonisia untuk mode turnamen
-                          VR.
+                          Object Inspector untuk merotasi, zoom, dan membongkar
+                          (dismantle) model 3D seperti roket Falcon Heavy,
+                          satelit, dan modul ISS (Columbus/ESA, JPM/JAXA, Lab AS
+                          Destiny). Dilengkapi kuis interaktif per fase, login
+                          ID pengguna untuk tracking progres dan skor, serta
+                          mendukung mode PC dan VR.
                         </p>
                       </div>
                     </div>
 
                     <p className="text-xs text-gray-500 mt-6 italic">
-                      ✦ Drag the headset on the left to rotate it 360°
+                      ✦ Seret objek di sebelah kiri untuk memutarnya 360°
                     </p>
                   </div>
                 </div>
@@ -378,7 +381,19 @@ export default function Home() {
             </section>
 
             {/* SECTION: AWARDS & RECOGNITION */}
-            <section id="awards-section" className="relative w-full h-[160vh]">
+            {/* CATATAN: sebelumnya section ini pakai h-[160vh] (pola yang
+                cocok buat WardekaCanvas/VRCanvas yang sticky-pinned selama
+                scroll, sehingga butuh "jalur scroll" panjang buat animasi
+                3D-nya jalan). AwardsCanvas TIDAK sticky-pinned — tingginya
+                mengikuti konten sendiri (lihat AwardsCanvas.tsx: div
+                pembungkus "relative w-full" tanpa tinggi tetap, Canvas 3D
+                absolute inset-0 mengikuti tinggi itu). Height paksa 160vh
+                itu jauh lebih tinggi dari konten aslinya (~600-700px),
+                sehingga menyisakan ruang kosong besar di bawah konten
+                sebelum RecognitionList mulai — INI penyebab jarak yang
+                terasa jauh banget. Dihapus supaya tinggi section murni
+                mengikuti konten & jaraknya rapat ke RecognitionList. */}
+            <section id="awards-section" className="relative w-full">
               <AwardsCanvas scrollProgressRef={awardsProgressRef} />
             </section>
 

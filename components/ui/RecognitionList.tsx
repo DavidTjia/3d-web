@@ -4,31 +4,34 @@ import { RECOGNITIONS } from "@/lib/awardsData";
 
 export default function RecognitionList() {
   return (
+    // Dibuat plain, tanpa scroll dan tanpa card box sama sekali. Ini
+    // sengaja beda gaya dari AwardsCanvas di atasnya, yang pakai border,
+    // backdrop blur, dan warna amber yang mencolok. Di sini, warnanya abu
+    // muted dan tanpa border, jadi kebaca sebagai info pelengkap, bukan
+    // section utama yang setara dengan Awards.
     <section
       aria-label="Pengakuan dan pencapaian tambahan"
-      className="relative w-full px-6 md:px-16 lg:px-24 py-20"
+      className="relative w-full px-6 md:px-16 lg:px-24 pt-2 pb-16"
     >
-      <div className="max-w-4xl mx-auto">
-        <span className="text-xs font-bold tracking-[0.35em] uppercase text-amber-400 mb-3 block text-center">
+      <div className="max-w-4xl mx-auto text-center">
+        <span className="text-[11px] font-medium tracking-[0.3em] uppercase text-gray-500 mb-5 block">
           Pengakuan Lainnya
         </span>
-        <h3 className="font-display text-2xl md:text-3xl font-bold text-white mb-10 text-center">
-          Milestone &amp; Apresiasi
-        </h3>
 
-        <ul className="grid grid-cols-1 md:grid-cols-2 gap-4 list-none">
+        <ul
+          className="flex flex-wrap justify-center gap-x-6 gap-y-3 list-none"
+          role="list"
+        >
           {RECOGNITIONS.map((item) => (
             <li
               key={item.id}
-              className="flex gap-3 rounded-lg border border-cyan-glow/15 bg-space-navy/30 backdrop-blur-sm p-4"
+              className="flex items-center gap-2 text-xs sm:text-sm text-gray-400"
             >
               <span
-                className="mt-1.5 h-1.5 w-1.5 rounded-full bg-amber-400 shrink-0"
+                className="h-1 w-1 rounded-full bg-gray-500"
                 aria-hidden="true"
               />
-              <p className="font-body text-sm md:text-base text-gray-200 leading-relaxed">
-                {item.text}
-              </p>
+              {item.text}
             </li>
           ))}
         </ul>
