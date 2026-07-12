@@ -1,0 +1,473 @@
+@import "tailwindcss";
+
+@theme {
+  --color-space-black: #030303;
+  --color-space-navy: #070714;
+  --color-nebula-purple: #6d28d9;
+  --color-glow-blue: #3b82f6;
+  --color-cyan-glow: #00d2ff;
+  --color-white-glow: #ffffff;
+
+  --font-display: var(--font-outfit), sans-serif;
+  --font-body: var(--font-inter), sans-serif;
+}
+
+:root {
+  --background: #030303;
+  --foreground: #ffffff;
+}
+
+html,
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100%;
+  scroll-behavior: auto; /* Required for Lenis smooth scroll */
+}
+
+/* Lenis smooth scroll support */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+/* Hide cursor on devices with a mouse/pointer pointer */
+@media (pointer: fine) {
+  *,
+  html,
+  body,
+  a,
+  button,
+  input,
+  textarea,
+  [role="button"] {
+    cursor: none !important;
+  }
+}
+
+/* Custom Scrollbar for space theme */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #030303;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #15152b;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #00d2ff;
+  box-shadow: 0 0 10px #00d2ff;
+}
+
+/* Glassmorphism utility */
+.glassmorphism {
+  background: rgba(7, 7, 20, 0.4);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+/* Emissive glow filters */
+.glow-purple {
+  text-shadow: 0 0 10px rgba(109, 40, 217, 0.6), 0 0 20px rgba(109, 40, 217, 0.3);
+}
+
+.glow-blue {
+  text-shadow: 0 0 10px rgba(0, 210, 255, 0.6), 0 0 20px rgba(0, 210, 255, 0.3);
+}
+
+.glow-white {
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.8), 0 0 15px rgba(255, 255, 255, 0.4);
+}
+
+/* Selection colors */
+::selection {
+  background: rgba(0, 210, 255, 0.3);
+  color: #ffffff;
+}
+
+/* ══════════════════════════════════════════════════════════
+   ROCKET LOADER — Cinematic Earth-to-Space launch (v3)
+   ══════════════════════════════════════════════════════════ */
+
+.rl-root {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  overflow: hidden;
+  background: transparent;
+}
+
+/* ── Earth scene ──────────────────────────────────────────── */
+.rl-earth-scene {
+  position: absolute;
+  inset: 0;
+  z-index: 9001;
+  overflow: hidden;
+}
+
+/* ── Pre-dawn sky: very dark — matches the dark space landing page ── */
+.rl-sky {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(
+    to top,
+    /* Near-black horizon */
+    #0c0a08 0%,
+    #15100c 5%,
+    /* Dark amber-teal twilight band */
+    #181c28 12%,
+    /* Deep navy atmosphere */
+    #0c1424 28%,
+    #080e1c 48%,
+    /* Near space */
+    #040810 72%,
+    #020508 88%,
+    #010306 100%
+  );
+}
+
+/* ── Dim horizon glow — very faint amber, not bright ── */
+.rl-sun-glow {
+  position: absolute;
+  bottom: 14%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 640px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 80%,
+    rgba(180, 90, 30, 0.32) 0%,
+    rgba(120, 60, 18, 0.14) 40%,
+    rgba(80, 40, 10, 0.05) 70%,
+    transparent 100%);
+  filter: blur(22px);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* ── Clouds — very dark, barely visible at pre-dawn ── */
+.rl-clouds { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
+
+.rl-cloud {
+  position: absolute;
+  height: 36px;
+  border-radius: 50px;
+  background: radial-gradient(ellipse at 50% 40%,
+    rgba(110,115,130,0.45) 0%,
+    rgba(70,75,90,0.20) 55%,
+    transparent 100%);
+  filter: blur(14px);
+  animation: rl-cloud-drift linear infinite;
+}
+
+@keyframes rl-cloud-drift {
+  from { transform: translateX(15vw); }
+  to   { transform: translateX(-125vw); }
+}
+
+/* ── Ground — dark industrial launch complex terrain ── */
+.rl-ground {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 18vh;
+  z-index: 3;
+  background: linear-gradient(to top,
+    #050508 0%,     /* near black base */
+    #0c0c10 30%,    /* very dark grey */
+    #12121a 60%,    /* dark blue-grey */
+    #181820 85%,    /* dark purple-grey */
+    transparent 100%);
+}
+.rl-ground::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0px, transparent 40px,
+    rgba(255,255,255,0.018) 40px, rgba(255,255,255,0.018) 41px
+  );
+}
+
+/* ── Launch area ── */
+.rl-launch-area {
+  position: absolute;
+  bottom: 18vh;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ── Ground mist — very faint blue-grey ── */
+.rl-ground-mist {
+  position: absolute;
+  bottom: 14vh;
+  left: 0; right: 0;
+  height: 70px;
+  z-index: 4;
+  background: linear-gradient(to top,
+    rgba(80,90,120,0.12) 0%,
+    rgba(60,70,100,0.05) 65%,
+    transparent 100%);
+  filter: blur(14px);
+  pointer-events: none;
+}
+
+/* ── Launch pad ── */
+.rl-pad-wrap {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center;
+  z-index: 5;
+}
+
+.rl-pad-platform {
+  width: 170px; height: 10px;
+  background: linear-gradient(180deg, #2a2e3a 0%, #181c24 100%);
+  border-radius: 2px 2px 0 0;
+  box-shadow: 0 -1px 0 rgba(80,120,200,0.2), 0 3px 14px rgba(0,0,0,0.7);
+}
+
+.rl-pad-leg {
+  position: absolute; top: 10px;
+  width: 7px; height: 26px;
+  background: linear-gradient(180deg, #222838, #121520);
+  border-radius: 0 0 2px 2px;
+}
+.rl-pad-leg-l { left: 30px;  transform: rotate(-8deg); transform-origin: top center; }
+.rl-pad-leg-r { right: 30px; transform: rotate(8deg);  transform-origin: top center; }
+
+/* ── Pad blast glow ── */
+.rl-pad-blast-glow {
+  position: absolute;
+  bottom: -10px;
+  left: 50%; transform: translateX(-50%);
+  width: 280px; height: 80px; border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 30%,
+    rgba(255,110,20,0.65), rgba(220,60,0,0.28) 45%, transparent 75%);
+  filter: blur(20px);
+  pointer-events: none; z-index: 4;
+  transition: opacity 0.08s ease;
+}
+
+/* ── Dark smoke — thick black/charcoal billow ── */
+.rl-smoke-wrap {
+  position: absolute;
+  bottom: 18vh;
+  left: 0; width: 100%;
+  pointer-events: none; z-index: 6;
+  transition: opacity 0.35s ease;
+}
+
+.rl-smoke-puff {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 40% 35%,
+    rgba(55,52,60,0.75), rgba(35,33,42,0.45) 50%, transparent 82%);
+  filter: blur(16px);
+  animation: rl-smoke ease-out infinite;
+  bottom: 0;
+}
+
+@keyframes rl-smoke {
+  0%   { transform: scale(0.25) translate(0, 0); opacity: 0; }
+  12%  { opacity: 0.85; }
+  55%  { opacity: 0.50; }
+  100% { transform: scale(3.0) translate(0, -65px); opacity: 0; }
+}
+
+/* ════════════════════════════════════════════════════════
+   FIRE — 5-Layer Rocket Engine Exhaust Plume
+   All layers are positioned BELOW the nozzle, growing
+   downward from the nozzle exit plane.
+   ════════════════════════════════════════════════════════ */
+
+/* Fire container — sits directly below the rocket SVG bottom */
+.rl-fire-below {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Layer 4: Wide diffuse heat bloom / ground illumination halo */
+.rl-fire-halo {
+  position: absolute;
+  top: 0; left: 0;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 15%,
+    rgba(255,140,30,0.60) 0%,
+    rgba(220,80,0,0.30)   30%,
+    rgba(180,50,0,0.10)   60%,
+    transparent 80%);
+  filter: blur(35px);
+  pointer-events: none;
+  transition: opacity 0.09s ease;
+}
+
+/* Layer 3: Dark red/crimson outer plume — wide, tapered conical shape */
+.rl-fire-outer-plume {
+  width: 28px;
+  /* Narrow at top (nozzle), flared at bottom (expanded exhaust) */
+  border-radius: 8% 8% 55% 55% / 8% 8% 62% 62%;
+  background: linear-gradient(to bottom,
+    rgba(255,110,20,0.85)  0%,
+    #cc3a00               20%,
+    #8c1800               50%,
+    #550800               78%,
+    transparent           100%);
+  filter: blur(8px);
+  transition: height 0.07s ease, width 0.07s ease, opacity 0.10s ease;
+  animation: rl-plume 0.14s ease-in-out infinite alternate;
+}
+
+/* Layer 2: Orange mid plume */
+.rl-fire-mid-plume {
+  position: absolute; top: 0;
+  width: 20px;
+  border-radius: 6% 6% 52% 52% / 6% 6% 58% 58%;
+  background: linear-gradient(to bottom,
+    rgba(255,210,60,0.95)  0%,
+    #ffaa00               18%,
+    #ff6200               45%,
+    #cc2800               75%,
+    transparent           100%);
+  filter: blur(4px);
+  transition: height 0.07s ease, width 0.07s ease, opacity 0.10s ease;
+  animation: rl-plume 0.10s ease-in-out infinite alternate-reverse;
+}
+
+/* Layer 1: Bright yellow core plume */
+.rl-fire-core-plume {
+  position: absolute; top: 0;
+  width: 14px;
+  border-radius: 4% 4% 48% 48% / 4% 4% 55% 55%;
+  background: linear-gradient(to bottom,
+    rgba(255,255,180,1.0)  0%,
+    #ffee00               14%,
+    #ffcc00               35%,
+    #ff8800               65%,
+    #ee3300               88%,
+    transparent           100%);
+  filter: blur(2px);
+  transition: height 0.06s ease, width 0.06s ease, opacity 0.08s ease;
+  animation: rl-plume 0.08s ease-in-out infinite alternate;
+}
+
+/* Layer 0: White plasma — innermost, hottest (nozzle throat exit) */
+.rl-fire-plasma {
+  position: absolute; top: 0;
+  width: 10px;
+  border-radius: 3% 3% 45% 45% / 3% 3% 50% 50%;
+  background: linear-gradient(to bottom,
+    #ffffff               0%,
+    rgba(255,255,240,0.95) 10%,
+    rgba(255,255,180,0.8)  28%,
+    rgba(255,220,100,0.6)  55%,
+    transparent           100%);
+  filter: blur(0.8px);
+  transition: height 0.06s ease, width 0.06s ease, opacity 0.07s ease;
+  animation: rl-plume 0.06s ease-in-out infinite alternate-reverse;
+}
+
+/* Plume flicker — slight lateral sway and breathing */
+@keyframes rl-plume {
+  from { transform: scaleX(1.00) scaleY(1.00) rotate(-0.3deg); }
+  to   { transform: scaleX(0.93) scaleY(1.04) rotate(0.3deg);  }
+}
+
+/* ── HUD ── */
+.rl-hud {
+  position: fixed;
+  bottom: 6vh; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 0.8rem;
+  z-index: 9010;
+  width: min(380px, 80vw);
+}
+
+.rl-status-text {
+  font-family: var(--font-inter), sans-serif;
+  font-size: 0.6rem; font-weight: 600;
+  letter-spacing: 0.38em; text-transform: uppercase;
+  color: rgba(210, 220, 255, 0.70);
+  text-shadow: 0 1px 10px rgba(0,0,0,0.8);
+  text-align: center; min-height: 1.2em; margin: 0;
+}
+
+.rl-progress-track {
+  position: relative; width: 100%; height: 1.5px;
+  background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden;
+}
+
+.rl-progress-fill {
+  position: absolute; left: 0; top: 0; height: 100%;
+  background: linear-gradient(90deg,
+    rgba(200,140,40,0.9) 0%, rgba(255,180,60,1) 50%, rgba(255,220,120,1) 100%);
+  border-radius: 2px;
+  transition: width 0.12s linear;
+  box-shadow: 0 0 7px rgba(255,180,60,0.55);
+}
+
+.rl-progress-shimmer {
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.28) 50%, transparent 100%);
+  animation: rl-shimmer 1.8s linear infinite;
+}
+@keyframes rl-shimmer {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(400%); }
+}
+
+.rl-percent-wrap { display: flex; justify-content: center; align-items: center; }
+
+.rl-percent-text {
+  font-family: var(--font-outfit), sans-serif;
+  font-size: 0.95rem; font-weight: 700;
+  color: rgba(255, 255, 255, 0.90);
+  text-shadow: 0 1px 12px rgba(0,0,0,0.9);
+  letter-spacing: 0.05em;
+}
+
+/* ── Flash ── */
+.rl-flash {
+  position: fixed; inset: 0;
+  background: #fff6e0; pointer-events: none;
+}
+
+/* ── SSR placeholder background ── */
+.rl-earth-bg {
+  background: linear-gradient(to top,
+    #050508 0%, #0c1424 25%, #080e1c 55%, #040810 85%, #010306 100%);
+}
