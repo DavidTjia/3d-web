@@ -47,6 +47,21 @@ export default function Starfield({ scrollProgressRef }: StarfieldProps) {
     const mouseX = (pointer.x * viewport.width) / 2;
     const mouseY = (pointer.y * viewport.height) / 2;
 
+    // Compute transition warp factor for star stretching
+    const keyframes = [0.0, 0.35, 0.70, 1.0];
+    let k0 = 0;
+    let k1 = 1;
+    for (let i = 0; i < keyframes.length - 1; i++) {
+      if (scroll >= keyframes[i] && scroll <= keyframes[i+1]) {
+        k0 = keyframes[i];
+        k1 = keyframes[i+1];
+        break;
+      }
+    }
+    const range = k1 - k0;
+    const tLocal = range > 0 ? (scroll - k0) / range : 0;
+    const warpFactor = Math.sin(tLocal * Math.PI); // 0 at keyframe, 1 at peak transition
+
     const fade = Math.max(0, 1 - scroll * 1.6);
     const scrollSpeedMul = 1 - scroll * 0.6;
 
@@ -72,7 +87,11 @@ export default function Starfield({ scrollProgressRef }: StarfieldProps) {
       }
 
       dummy.position.set(pos.x + offsetX, pos.y + offsetY, pos.z);
-      dummy.scale.setScalar(currentScale * fade);
+      // Stretch scale on depth (Z) axis during transition warp (hyperdrive effect)
+      const starW = currentScale * fade;
+      const starH = currentScale * fade;
+      const starD = currentScale * fade * (1 + warpFactor * 3.5);
+      dummy.scale.set(starW, starH, starD);
       dummy.updateMatrix();
       meshRef.current.setMatrixAt(i, dummy.matrix);
 
