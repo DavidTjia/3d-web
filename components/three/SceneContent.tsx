@@ -21,14 +21,14 @@ interface SceneContentProps {
 // Camera position [x, y, z] and lookAt target [x, y, z]
 // ────────────────────────────────────────────────────────────────────────
 const CAM_PATH = [
-  { t: 0.00, pos: [ 0.0,  0.5, 10.0], look: [ 0.0,  0.0,  0.0] }, // Hero – wide
-  { t: 0.13, pos: [ 0.8,  0.4,  8.5], look: [ 1.0,  0.2, -4.0] }, // Start Wardeka approach
-  { t: 0.30, pos: [ 2.4,  0.8,  6.8], look: [ 3.2,  0.6, -8.0] }, // Wardeka peak – Saturn close
-  { t: 0.50, pos: [ 1.0,  0.3,  7.5], look: [ 0.5,  0.0, -4.0] }, // Wardeka settling
-  { t: 0.62, pos: [-0.4,  0.6,  7.8], look: [-1.0,  0.4, -4.0] }, // Entering VR
-  { t: 0.78, pos: [-2.6,  1.4,  6.6], look: [-4.0,  1.2, -9.0] }, // VR peak – blue planet
-  { t: 0.90, pos: [-1.2,  0.2,  6.8], look: [-0.5, -0.2, -3.0] }, // VR settling
-  { t: 1.00, pos: [ 0.0, -1.6,  5.5], look: [ 0.0, -2.4, -1.0] }, // Bottom / terrain
+  { t: 0.00, pos: [ 0.0,  0.4, 11.0], look: [ 0.0,  0.0,  0.0] }, // Hero – wide, epic
+  { t: 0.13, pos: [ 0.2,  0.3,  8.0], look: [ 0.3,  0.1, -2.0] }, // Approach
+  { t: 0.30, pos: [ 0.4,  0.2,  4.5], look: [ 0.8,  0.1, -2.0] }, // Wardeka Peak – deep zoom-in to Saturn
+  { t: 0.50, pos: [ 0.0,  0.3,  8.2], look: [ 0.0,  0.0,  0.0] }, // Transition reset – pull back
+  { t: 0.62, pos: [-0.2,  0.3,  7.6], look: [-0.3,  0.1, -2.0] }, // Transition approach
+  { t: 0.78, pos: [-0.4,  0.3,  4.2], look: [-0.8,  0.1, -2.0] }, // VR Peak – deep zoom-in to Blue Planet
+  { t: 0.90, pos: [ 0.0, -0.6,  6.8], look: [ 0.0, -1.2, -2.0] }, // Pull back & pivot down
+  { t: 1.00, pos: [ 0.0, -2.0,  4.0], look: [ 0.0, -2.8, -1.0] }, // Bottom Peak – canyon landing
 ] as const;
 
 /** Cubic in-out easing for a smooth start and landing at each keyframe */

@@ -257,9 +257,9 @@ export default function PlanetaryScene({ scrollProgressRef, bgScrollRef }: Plane
   const saturnRef       = useRef<THREE.Group>(null);
   const saturnBodyRef   = useRef<THREE.Mesh>(null);
   // Blue gas giant
-  const bluePlanetRef   = useRef<THREE.Mesh>(null);
+  const bluePlanetRef   = useRef<THREE.Group>(null);
   // Small rocky planet
-  const rockyRef        = useRef<THREE.Mesh>(null);
+  const rockyRef        = useRef<THREE.Group>(null);
   const terrainGrpRef   = useRef<THREE.Group>(null);
 
   // ── Shader materials ──────────────────────────────────────────────────
@@ -468,40 +468,43 @@ export default function PlanetaryScene({ scrollProgressRef, bgScrollRef }: Plane
           </mesh>
         </group>
       </group>
+      {/* ── Planet 2: Blue gas giant — group so halo moves with planet ── */}
+      <group ref={bluePlanetRef} position={[-7.0, 3.2, -18]}>
+        <mesh>
+          <sphereGeometry args={[2.5, 64, 64]} />
+          <primitive object={bluePlanetMat} attach="material" />
+        </mesh>
+        {/* Blue planet halo */}
+        <mesh>
+          <sphereGeometry args={[2.75, 24, 24]} />
+          <meshBasicMaterial
+            color={new THREE.Color(0.15, 0.45, 0.85)}
+            transparent opacity={0.12}
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+            side={THREE.BackSide}
+          />
+        </mesh>
+      </group>
 
-      {/* ── Planet 2: Blue gas giant — distant upper-left ────────── */}
-      <mesh ref={bluePlanetRef} position={[-7.0, 3.2, -18]}>
-        <sphereGeometry args={[2.5, 64, 64]} />
-        <primitive object={bluePlanetMat} attach="material" />
-      </mesh>
-      {/* Blue planet halo */}
-      <mesh position={[-7.0, 3.2, -18]}>
-        <sphereGeometry args={[2.75, 24, 24]} />
-        <meshBasicMaterial
-          color={new THREE.Color(0.15, 0.45, 0.85)}
-          transparent opacity={0.12}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-          side={THREE.BackSide}
-        />
-      </mesh>
-
-      {/* ── Planet 3: Small rocky planet — distant right ──────────── */}
-      <mesh ref={rockyRef} position={[8.0, 2.8, -20]}>
-        <sphereGeometry args={[1.8, 64, 64]} />
-        <primitive object={rockyMat} attach="material" />
-      </mesh>
-      {/* Rocky planet halo */}
-      <mesh position={[8.0, 2.8, -20]}>
-        <sphereGeometry args={[2.0, 20, 20]} />
-        <meshBasicMaterial
-          color={new THREE.Color(0.35, 0.45, 0.75)}
-          transparent opacity={0.10}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-          side={THREE.BackSide}
-        />
-      </mesh>
+      {/* ── Planet 3: Small rocky planet — group so halo moves with planet ── */}
+      <group ref={rockyRef} position={[8.0, 2.8, -20]}>
+        <mesh>
+          <sphereGeometry args={[1.8, 64, 64]} />
+          <primitive object={rockyMat} attach="material" />
+        </mesh>
+        {/* Rocky planet halo */}
+        <mesh>
+          <sphereGeometry args={[2.0, 20, 20]} />
+          <meshBasicMaterial
+            color={new THREE.Color(0.35, 0.45, 0.75)}
+            transparent opacity={0.10}
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+            side={THREE.BackSide}
+          />
+        </mesh>
+      </group>
 
       {/* ── Nebula haze billboards ──────────────────────────────── */}
       {nebulae.map((n, i) => (
