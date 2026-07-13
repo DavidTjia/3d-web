@@ -7,7 +7,7 @@
  */
 
 import { useFrame } from "@react-three/fiber";
-import { useRef } from "react";
+import { useRef, useMemo } from "react";
 import * as THREE from "three";
 
 interface PlanetarySceneProps {
@@ -66,23 +66,25 @@ export default function PlanetaryScene({
 }: PlanetarySceneProps) {
   const gridGroupRef = useRef<THREE.Group>(null);
 
-  // Pakai ref (bukan useMemo) supaya boleh dimutasi di useFrame
-  // tanpa kena warning "Cannot modify local variables after render completes"
-  // dari React Compiler.
-  const gridMatRef = useRef<THREE.ShaderMaterial | null>(null);
-  if (!gridMatRef.current) {
-    gridMatRef.current = new THREE.ShaderMaterial({
-      vertexShader: GRID_VERT,
-      fragmentShader: GRID_FRAG,
-      uniforms: {
-        uTime: { value: 0 },
-        uScroll: { value: 0 },
-      },
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-    });
-  }
+  // Pakai useMemo untuk material biar aman dengan React Compiler
+  // (React Compiler melarang akses ref.current saat render)
+  const gridMat = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        vertexShader: GRID_VERT,
+        fragmentShader: GRID_FRAG,
+        uniforms: {
+          uTime: { value: 0 },
+          uScroll: { value: 0 },
+        },
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      }),
+    []
+  );
+  // Ref untuk mutasi uniform di useFrame tanpa trigger re-render
+  const gridMatRef = useRef(gridMat);
 
   useFrame((state) => {
     const time = state.clock.getElapsedTime();
@@ -113,7 +115,7 @@ export default function PlanetaryScene({
     <group ref={gridGroupRef}>
       {/* Lantai grid utama */}
       <mesh
-        material={gridMatRef.current}
+        material={gridMat}
         position={[0, -5.0, -30]}
         rotation={[-Math.PI / 2, 0, 0]}
       >
