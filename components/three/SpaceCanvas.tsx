@@ -1,15 +1,18 @@
-'use client';
+"use client";
 
-import { Canvas } from '@react-three/fiber';
-import { Suspense } from 'react';
-import SceneContent from './SceneContent';
+import { Canvas } from "@react-three/fiber";
+import { Suspense } from "react";
+import SceneContent from "./SceneContent";
 
 interface SpaceCanvasProps {
   scrollProgressRef: React.RefObject<number>;
   bgScrollRef: React.RefObject<number>;
 }
 
-export default function SpaceCanvas({ scrollProgressRef, bgScrollRef }: SpaceCanvasProps) {
+export default function SpaceCanvas({
+  scrollProgressRef,
+  bgScrollRef,
+}: SpaceCanvasProps) {
   return (
     <div className="fixed inset-0 z-0 h-screen w-full overflow-hidden bg-black">
       <Canvas
@@ -17,22 +20,31 @@ export default function SpaceCanvas({ scrollProgressRef, bgScrollRef }: SpaceCan
         gl={{
           antialias: true,
           alpha: false,
-          powerPreference: 'high-performance',
+          powerPreference: "high-performance",
           stencil: false,
           depth: true,
         }}
         dpr={[1, 1.5]}
       >
-        {/* Deep space background */}
-        <color attach="background" args={['#030308']} />
+        {/* Cyberpunk dark background */}
+        <color attach="background" args={["#020402"]} />
+        <fog attach="fog" args={["#020402", 15, 90]} />
 
-        <ambientLight intensity={0.18} />
+        <ambientLight intensity={0.12} />
 
-        {/* Key blue light top-right */}
-        <directionalLight position={[5, 5, 5]} intensity={1.5} color="#00d2ff" />
+        {/* Key neon-green light */}
+        <directionalLight
+          position={[5, 5, 5]}
+          intensity={1.2}
+          color="#22ff9d"
+        />
 
-        {/* Purple fill bottom-left */}
-        <directionalLight position={[-5, -5, -5]} intensity={0.8} color="#6d28d9" />
+        {/* Cyan fill, redup */}
+        <directionalLight
+          position={[-5, -5, -5]}
+          intensity={0.5}
+          color="#0891b2"
+        />
 
         <Suspense fallback={null}>
           <SceneContent

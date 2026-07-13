@@ -201,10 +201,10 @@ export default function Home() {
                 className="flex flex-col items-center text-center select-none"
                 style={{ willChange: "opacity, transform" }}
               >
-                <div className="absolute -z-10 h-64 w-64 rounded-full bg-cyan-glow/10 blur-[100px] pointer-events-none" />
-                <div className="absolute -z-10 h-64 w-64 translate-x-20 translate-y-10 rounded-full bg-nebula-purple/15 blur-[120px] pointer-events-none" />
+                <div className="absolute -z-10 h-64 w-64 rounded-full bg-fuchsia-500/10 blur-[100px] pointer-events-none" />
+                <div className="absolute -z-10 h-64 w-64 translate-x-20 translate-y-10 rounded-full bg-violet-500/15 blur-[120px] pointer-events-none" />
 
-                <span className="text-[11px] font-bold tracking-[0.45em] uppercase text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.35)] mb-5 animate-pulse">
+                <span className="text-[11px] font-bold tracking-[0.45em] uppercase text-fuchsia-400 drop-shadow-[0_0_8px_rgba(232,58,187,0.4)] mb-5 animate-pulse">
                   Next-Gen Game Studio
                 </span>
 
@@ -212,7 +212,7 @@ export default function Home() {
                   <span className="font-display text-5xl md:text-7xl lg:text-8xl font-black tracking-[0.25em] text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.15)] uppercase leading-none">
                     Kawanua
                   </span>
-                  <span className="font-display text-[10px] md:text-xs lg:text-sm font-bold tracking-[0.55em] text-amber-400 uppercase mt-4 drop-shadow-[0_0_8px_rgba(245,158,11,0.35)] leading-none animate-pulse">
+                  <span className="font-display text-[10px] md:text-xs lg:text-sm font-bold tracking-[0.55em] text-emerald-400 uppercase mt-4 drop-shadow-[0_0_8px_rgba(52,211,153,0.4)] leading-none animate-pulse">
                     Virtual Teknologi
                   </span>
                 </h1>
@@ -227,7 +227,7 @@ export default function Home() {
                     Scroll to Explore
                   </span>
                   <div className="relative h-12 w-5.5 rounded-full border border-gray-800 flex justify-center p-1 bg-space-navy/20">
-                    <div className="h-2 w-1.5 rounded-full bg-amber-400 animate-bounce" />
+                    <div className="h-2 w-1.5 rounded-full bg-emerald-400 animate-bounce" />
                   </div>
                 </div>
               </div>
@@ -242,13 +242,13 @@ export default function Home() {
                   style={{ willChange: "opacity, transform" }}
                 >
                   <div className="lg:col-span-6 xl:col-span-5 max-w-xl">
-                    <span className="text-sm font-bold tracking-[0.35em] uppercase text-amber-400 mb-4 block">
+                    <span className="text-sm font-bold tracking-[0.35em] uppercase text-fuchsia-400 mb-4 block">
                       Game Development · Esports
                     </span>
 
                     <h2 className="font-display text-4xl md:text-6xl font-bold text-white mb-5">
                       Wardeka{" "}
-                      <span className="text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.35)]">
+                      <span className="text-fuchsia-400 drop-shadow-[0_0_8px_rgba(232,58,187,0.4)]">
                         Edonisia
                       </span>
                     </h2>
@@ -260,7 +260,7 @@ export default function Home() {
                     </p>
 
                     {/* STAT CALLOUT: angka besar sebagai hook, sebelum narasi panjang */}
-                    <div className="flex items-end gap-8 mb-8 border-l-2 border-amber-400/30 pl-5">
+                    <div className="flex items-end gap-8 mb-8 border-l-2 border-fuchsia-400/30 pl-5">
                       <div>
                         <p className="font-display text-3xl md:text-4xl font-bold text-white leading-none">
                           95%
@@ -270,7 +270,7 @@ export default function Home() {
                         </p>
                       </div>
                       <div>
-                        <p className="font-display text-3xl md:text-4xl font-bold text-amber-400 leading-none">
+                        <p className="font-display text-3xl md:text-4xl font-bold text-fuchsia-400 leading-none">
                           5%
                         </p>
                         <p className="text-xs text-gray-300 mt-1.5 max-w-[140px] leading-snug">
@@ -284,7 +284,7 @@ export default function Home() {
                     </div>
 
                     <div className="space-y-4">
-                      <div className="border-l-2 border-amber-400/30 pl-4">
+                      <div className="border-l-2 border-fuchsia-400/30 pl-4">
                         <p className="text-xs uppercase tracking-[0.2em] text-gray-400 mb-1.5">
                           Solusi
                         </p>
@@ -405,9 +405,9 @@ export default function Home() {
             {/* SECTION: TRANSITION & DEMO CARD */}
             <section className="relative flex min-h-screen w-full items-center justify-center px-6 py-24 bg-transparent">
               <div className="glassmorphism max-w-3xl w-full p-10 md:p-14 rounded-2xl relative overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-r from-amber-400/5 to-nebula-purple/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/5 to-fuchsia-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
-                <span className="text-xs font-bold tracking-[0.35em] uppercase text-amber-400 mb-4 block">
+                <span className="text-xs font-bold tracking-[0.35em] uppercase text-emerald-400 mb-4 block">
                   01 // The Odyssey
                 </span>
 
@@ -423,7 +423,7 @@ export default function Home() {
                   in real-time.
                 </p>
 
-                <div className="w-16 h-[2px] bg-gradient-to-r from-amber-400 to-nebula-purple" />
+                <div className="w-16 h-[2px] bg-gradient-to-r from-emerald-400 to-fuchsia-500" />
               </div>
             </section>
           </main>

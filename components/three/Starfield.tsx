@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useFrame } from '@react-three/fiber';
-import { useMemo, useRef } from 'react';
-import * as THREE from 'three';
-import { STARS, STAR_COUNT } from '@/lib/starData';
-import { camVelocitySharedRef } from './SceneContent';
+import { useFrame } from "@react-three/fiber";
+import { useMemo, useRef } from "react";
+import * as THREE from "three";
+import { STARS, STAR_COUNT } from "@/lib/starData";
+import { camVelocitySharedRef } from "./SceneContent";
 
 interface StarfieldProps {
   scrollProgressRef: React.RefObject<number>;
@@ -15,18 +15,18 @@ export default function Starfield({ scrollProgressRef }: StarfieldProps) {
 
   // Bigger, brighter glow texture
   const starTexture = useMemo(() => {
-    if (typeof window === 'undefined') return null;
-    const canvas = document.createElement('canvas');
+    if (typeof window === "undefined") return null;
+    const canvas = document.createElement("canvas");
     canvas.width = 128;
     canvas.height = 128;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (ctx) {
       const gradient = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
-      gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
-      gradient.addColorStop(0.08, 'rgba(255, 255, 255, 0.95)');
-      gradient.addColorStop(0.2, 'rgba(255, 255, 255, 0.6)');
-      gradient.addColorStop(0.45, 'rgba(255, 255, 255, 0.15)');
-      gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      gradient.addColorStop(0, "rgba(255, 255, 255, 1)");
+      gradient.addColorStop(0.08, "rgba(255, 255, 255, 0.95)");
+      gradient.addColorStop(0.2, "rgba(255, 255, 255, 0.6)");
+      gradient.addColorStop(0.45, "rgba(255, 255, 255, 0.15)");
+      gradient.addColorStop(1, "rgba(255, 255, 255, 0)");
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, 128, 128);
     }
@@ -59,7 +59,9 @@ export default function Starfield({ scrollProgressRef }: StarfieldProps) {
       const star = STARS[i];
       const pos = star.position;
 
-      const twinkle = Math.sin(time * star.twinkleSpeed * scrollSpeedMul + star.phase);
+      const twinkle = Math.sin(
+        time * star.twinkleSpeed * scrollSpeedMul + star.phase,
+      );
       const currentScale = star.size * (0.7 + twinkle * 0.3);
 
       // Subtle cursor attraction (XY only)
@@ -78,23 +80,15 @@ export default function Starfield({ scrollProgressRef }: StarfieldProps) {
 
       dummy.position.set(pos.x + offsetX, pos.y + offsetY, pos.z);
       // Velocity-proportional star stretch — smooth, no keyframe snapping
-      const s = currentScale * fade;
+      const s = currentScale * fade * 0.45; // partikel dikecilin biar nggak dominan
       dummy.scale.set(s, s, s * warpStretch);
       dummy.updateMatrix();
       meshRef.current.setMatrixAt(i, dummy.matrix);
 
-      // Nebula colour palette — brighter overall
-      if (i % 7 === 0) {
-        tempColor.setHSL(0.56, 0.8, 0.85);  // Blue glow
-      } else if (i % 11 === 0) {
-        tempColor.setHSL(0.76, 0.7, 0.8);   // Purple nebula
-      } else if (i % 17 === 0) {
-        tempColor.setHSL(0.5, 0.5, 0.92);   // Cyan tint
-      } else {
-        tempColor.setRGB(1, 1, 1);           // White
-      }
+      // Cyberpunk dust — hijau monokrom, redup, kesan partikel kecil bukan bintang terang
+      tempColor.setHSL(0.4, 0.55, 0.45 + twinkle * 0.1);
 
-      const brightness = (0.8 + (twinkle + 1) * 0.15) * star.brightness;
+      const brightness = (0.25 + (twinkle + 1) * 0.06) * star.brightness;
       tempColor.multiplyScalar(brightness * fade);
       meshRef.current.setColorAt(i, tempColor);
     }
@@ -110,7 +104,11 @@ export default function Starfield({ scrollProgressRef }: StarfieldProps) {
   return (
     <instancedMesh
       ref={meshRef}
-      args={[null as unknown as THREE.BufferGeometry, null as unknown as THREE.Material, STAR_COUNT]}
+      args={[
+        null as unknown as THREE.BufferGeometry,
+        null as unknown as THREE.Material,
+        STAR_COUNT,
+      ]}
       frustumCulled={false}
     >
       <planeGeometry args={[1, 1]} />
