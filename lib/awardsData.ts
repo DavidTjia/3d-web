@@ -1,6 +1,6 @@
 /**
  * Single source of truth for Awards & Recognition section data.
- * Content is transcribed as-given — do NOT paraphrase or invent
+ * Content is transcribed as-given do NOT paraphrase or invent
  * years/details here. Anything marked "// TODO" needs confirmation
  * from Sir Andi before going live.
  */
@@ -9,7 +9,7 @@ export interface FeaturedAward {
   id: string;
   title: string;
   grantor: string;
-  /** Leave undefined if the year wasn't provided — never guess. */
+  /** Leave undefined if the year wasn't provided never guess. */
   year?: string;
   description: string;
 }
@@ -37,7 +37,7 @@ export const FEATURED_AWARDS: FeaturedAward[] = [
   },
   {
     id: "best-indonesian-ip",
-    title: "Best Indonesian IP — Manguni Squad",
+    title: "Best Indonesian IP Manguni Squad",
     grantor: "BEKRAF KATAPEL 2nd Batch",
     year: "2019",
     description:
@@ -63,11 +63,11 @@ export const FEATURED_AWARDS: FeaturedAward[] = [
 export const RECOGNITIONS: Recognition[] = [
   {
     id: "aki-2023-finalist",
-    text: "Finalis Terbaik 2023 Apresiasi Kreasi Indonesia — kategori Aplikasi dan Game (BigDade Studio)",
+    text: "Finalis Terbaik 2023 Apresiasi Kreasi Indonesia kategori Aplikasi dan Game (BIg Dade Studio)",
   },
   {
     id: "menparekraf-ar-tshirt",
-    text: "Apresiasi dari Menparekraf — peluncuran aplikasi Digital T-shirt (AR)",
+    text: "Apresiasi dari Menparekraf peluncuran aplikasi Digital T-shirt (AR)",
   },
   {
     id: "esports-national",
