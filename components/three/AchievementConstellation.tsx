@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import type { ThreeEvent } from "@react-three/fiber";
-import { FEATURED_AWARDS } from "@/lib/awardsData";
 
 interface AchievementConstellationProps {
   scrollProgressRef: React.RefObject<number>;
@@ -16,14 +15,6 @@ interface AchievementConstellationProps {
   onNodeHover: (index: number | null) => void;
   onNodeClick: (index: number) => void;
 }
-
-// ─── DUA KLASTER TERPISAH TOTAL — bukan cuma beda posisi X, tapi dua
-// <group> berbeda yang di-render dan dirotasi independen. Klaster kiri
-// (index 0,1,2) dan klaster kanan (index 3,4) TIDAK PERNAH terhubung garis
-// satu sama lain. Konten (heading/card/list) duduk di celah tengah yang
-// lebar, jadi nggak mungkin ketutup atau numpuk sama node manapun.
-const LEFT_INDICES = [0, 1, 2] as const;
-const RIGHT_INDICES = [3, 4] as const;
 
 const Y_OFFSET = 0.2;
 

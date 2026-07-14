@@ -181,58 +181,6 @@ const ROAD_FRAG = /* glsl */ `
   }
 `;
 
-// ─── Billboard Shaders ────────────────────────────────────────────────────────
-const BILLBOARD_VERT = /* glsl */ `
-  varying vec2 vUv;
-  void main() {
-    vUv = uv;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-  }
-`;
-
-const BILLBOARD_FRAG = /* glsl */ `
-  uniform float uTime;
-  uniform float uIndex;
-  varying vec2 vUv;
-
-  float hash(vec2 p) {
-    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
-  }
-
-  void main() {
-    vec2 uv = vUv;
-    float diag = uv.x * 0.5 + uv.y * 0.5;
-    vec3 bg = mix(vec3(1.0, 0.17, 0.53), vec3(0.48, 0.23, 0.93), diag);
-    bg *= 0.25;
-
-    float scan    = mod(uv.y * 40.0 + uTime * 1.5, 1.0);
-    float scanLine = smoothstep(0.85, 1.0, scan) * 0.18;
-
-    float flicker = 0.8 + 0.2 * sin(uTime * 7.3 + uIndex * 2.1);
-
-    float bar = smoothstep(0.03, 0.0, abs(mod(uv.y + uTime * 0.25 + uIndex * 0.3, 1.0) - 0.5));
-    bar *= 0.6;
-
-    float edgeX = smoothstep(0.15, 0.0, uv.x) + smoothstep(0.85, 1.0, uv.x);
-    float edgeY = smoothstep(0.08, 0.0, uv.y) + smoothstep(0.92, 1.0, uv.y);
-    float edge  = max(edgeX, edgeY);
-
-    float noise = hash(floor(uv * 8.0) + vec2(floor(uTime * 3.0), 0.0)) * 0.08;
-
-    vec3 pinkGlow   = vec3(1.0, 0.17, 0.53);
-    vec3 purpleGlow = vec3(0.48, 0.23, 0.93);
-
-    vec3 col = bg + scanLine + bar * pinkGlow + edge * purpleGlow * 1.5 + noise;
-    col *= flicker;
-
-    float theme = mod(uIndex, 3.0);
-    if (theme < 1.0)      col *= vec3(1.0, 0.8, 0.9);
-    else if (theme < 2.0) col *= vec3(0.8, 0.7, 1.0);
-    else                  col *= vec3(0.7, 0.95, 1.0);
-
-    gl_FragColor = vec4(col, 0.75 + scanLine * 0.25);
-  }
-`;
 
 // ─── Atmosphere Shaders ───────────────────────────────────────────────────────
 const ATMO_VERT = /* glsl */ `
@@ -532,16 +480,15 @@ function CityWindows() {
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const tempCol = useMemo(() => new THREE.Color(), []);
 
-  const mat = useMemo(
-    () =>
-      new THREE.MeshBasicMaterial({
-        transparent: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-        toneMapped: false,
-      }),
-    [],
-  );
+ const mat = useRef(
+  new THREE.MeshBasicMaterial({
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    toneMapped: false,
+    opacity: 1,
+  }),
+);
 
   useFrame((state) => {
     if (!meshRef.current) return;
@@ -723,8 +670,12 @@ function CityBillboards() {
   const textures = useMemo(
     () =>
       BILLBOARD_SPECS.map((_, idx) => {
-        const accent = idx % 3 === 0 ? C_MAGENTA : idx % 3 === 1 ? C_PURPLE : C_CYAN;
-        return createBillboardTexture(BILLBOARD_LABELS[idx % BILLBOARD_LABELS.length], accent);
+        const accent =
+          idx % 3 === 0 ? C_MAGENTA : idx % 3 === 1 ? C_PURPLE : C_CYAN;
+        return createBillboardTexture(
+          BILLBOARD_LABELS[idx % BILLBOARD_LABELS.length],
+          accent,
+        );
       }),
     [],
   );
@@ -756,14 +707,16 @@ function CityBillboards() {
       {BILLBOARD_SPECS.map((bp, i) => (
         <group key={i} position={[bp.x, bp.y, bp.z]} rotation={[0, bp.rotY, 0]}>
           <mesh
-            material={new THREE.MeshBasicMaterial({
-              map: textures[i],
-              transparent: true,
-              opacity: 0.94,
-              blending: THREE.AdditiveBlending,
-              toneMapped: false,
-              depthWrite: false,
-            })}
+            material={
+              new THREE.MeshBasicMaterial({
+                map: textures[i],
+                transparent: true,
+                opacity: 0.94,
+                blending: THREE.AdditiveBlending,
+                toneMapped: false,
+                depthWrite: false,
+              })
+            }
           >
             <planeGeometry args={[bp.w, bp.h]} />
           </mesh>
@@ -1043,7 +996,12 @@ function CityCables() {
 // ═══════════════════════════════════════════════════════════════════════════════
 const PARTICLE_COUNT = 600;
 
-function CityParticles({ enabled = true }: { enabled?: boolean }) {
+interface CityParticlesProps {
+  scrollProgressRef: React.RefObject<number>;
+  bgScrollRef?: React.RefObject<number>;
+}
+
+function CityParticles({ scrollProgressRef, bgScrollRef }: CityParticlesProps) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const tempCol = useMemo(() => new THREE.Color(), []);
@@ -1066,26 +1024,16 @@ function CityParticles({ enabled = true }: { enabled?: boolean }) {
     [],
   );
 
-  const mat = useMemo(
-    () =>
-      new THREE.MeshBasicMaterial({
-        transparent: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-        toneMapped: false,
-        opacity: 1,
-      }),
-    [],
-  );
-
   useFrame((state) => {
     if (!meshRef.current) return;
     const t = state.clock.getElapsedTime();
     const mesh = meshRef.current;
 
-    // Toggle material opacity based on enabled flag so entire particle
-    // system can be hidden in hero without unmounting (keeps stable refs).
-    mat.opacity = enabled ? 1 : 0;
+    const scroll = bgScrollRef?.current ?? scrollProgressRef.current ?? 0;
+    const isEnabled = scroll > 0.17;
+    if (mesh.material) {
+      (mesh.material as THREE.Material).opacity = isEnabled ? 1 : 0;
+    }
 
     for (let i = 0; i < PARTICLE_COUNT; i++) {
       const p = particleData[i];
@@ -1114,7 +1062,13 @@ function CityParticles({ enabled = true }: { enabled?: boolean }) {
       frustumCulled={false}
     >
       <planeGeometry args={[1, 1]} />
-      <primitive object={mat} attach="material" />
+      <meshBasicMaterial
+        transparent
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+        toneMapped={false}
+        opacity={0}
+      />
     </instancedMesh>
   );
 }
@@ -1358,10 +1312,6 @@ export default function CityEnvironment({
     atmoMatRef.current.uniforms.uTime.value = t;
   });
 
-  // Hide subtle background particles during hero (bgScroll small)
-  const bgProgress = bgScrollRef?.current ?? scrollProgressRef.current ?? 0;
-  const particlesEnabled = bgProgress > 0.17;
-
   return (
     <group>
       <CityLights />
@@ -1374,7 +1324,10 @@ export default function CityEnvironment({
       <CityProps />
       <SkyBridges />
       <CityCables />
-      <CityParticles enabled={particlesEnabled} />
+      <CityParticles
+        scrollProgressRef={scrollProgressRef}
+        bgScrollRef={bgScrollRef}
+      />
     </group>
   );
 }

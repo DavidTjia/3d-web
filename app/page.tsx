@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import SpaceCanvas from "@/components/three/SpaceCanvas";
 import WardekaCanvas from "@/components/three/WardekaCanvas";
 import VRCanvas from "@/components/three/VRCanvas";
@@ -43,8 +43,7 @@ export default function Home() {
 
   // Controls loading vs main experience visibility
   // Loading overlay removed — show main immediately so user can click.
-  const [isLoading, setIsLoading] = useState(false);
-  const [mainVisible, setMainVisible] = useState(true);
+  const mainVisible = true;
 
   // Register GSAP plugin sekali di awal
   useEffect(() => {
@@ -139,10 +138,9 @@ export default function Home() {
       },
     });
 
-    let vrFadeAnim: gsap.core.Tween | undefined;
     if (vrTextRef.current) {
       gsap.set(vrTextRef.current, { opacity: 0, y: 24 });
-      vrFadeAnim = gsap.to(vrTextRef.current, {
+      gsap.to(vrTextRef.current, {
         opacity: 1,
         y: 0,
         duration: 1,
@@ -236,57 +234,60 @@ export default function Home() {
               <WardekaCanvas scrollProgressRef={wardekaProgressRef}>
                 <div
                   ref={wardekaTextRef}
-                  className="w-full h-full grid grid-cols-1 lg:grid-cols-12 px-6 md:px-16 lg:px-24 items-center pointer-events-none"
+                  className="w-full h-full grid grid-cols-1 lg:grid-cols-12 px-6 md:px-16 lg:px-24 items-center pointer-events-none gap-8"
                   style={{ willChange: "opacity, transform" }}
                 >
-                  <div className="lg:col-span-6 xl:col-span-5 max-w-xl">
-                    <span className="text-sm font-bold tracking-[0.35em] uppercase text-fuchsia-400 mb-4 block">
+                  {/* Left Column — Header and Intro */}
+                  <div className="lg:col-span-4 pointer-events-auto max-w-sm flex flex-col justify-center">
+                    <span className="text-[10px] font-bold tracking-[0.35em] uppercase text-fuchsia-400 mb-2 block animate-pulse">
                       Game Development · Esports
                     </span>
 
-                    <h2 className="font-display text-4xl md:text-6xl font-bold text-white mb-5">
+                    <h2 className="font-display text-2xl md:text-3xl font-bold text-white mb-3">
                       Wardeka{" "}
                       <span className="text-fuchsia-400 drop-shadow-[0_0_8px_rgba(232,58,187,0.4)]">
                         Edonisia
                       </span>
                     </h2>
 
-                    <p className="font-body text-gray-100 text-base md:text-lg leading-relaxed mb-8">
+                    <p className="font-body text-gray-300 text-xs md:text-sm leading-relaxed mb-5">
                       Game esports shooter mobile pertama karya Indonesia,
                       dikembangkan Big Dade Interactive di bawah PT Kawanua
                       Virtual Teknologi.
                     </p>
 
-                    {/* STAT CALLOUT: angka besar sebagai hook, sebelum narasi panjang */}
-                    <div className="flex items-end gap-8 mb-8 border-l-2 border-fuchsia-400/30 pl-5">
+                    {/* STAT CALLOUT */}
+                    <div className="flex items-end gap-6 border-l-2 border-fuchsia-400/30 pl-4">
                       <div>
-                        <p className="font-display text-3xl md:text-4xl font-bold text-white leading-none">
+                        <p className="font-display text-xl md:text-2xl font-bold text-white leading-none">
                           95%
                         </p>
-                        <p className="text-xs text-gray-300 mt-1.5 max-w-[140px] leading-snug">
+                        <p className="text-[10px] text-gray-400 mt-1 max-w-[110px] leading-snug">
                           pasar game Indonesia (Rp33T) direbut developer asing
                         </p>
                       </div>
                       <div>
-                        <p className="font-display text-3xl md:text-4xl font-bold text-fuchsia-400 leading-none">
+                        <p className="font-display text-xl md:text-2xl font-bold text-fuchsia-400 leading-none">
                           5%
                         </p>
-                        <p className="text-xs text-gray-300 mt-1.5 max-w-[140px] leading-snug">
-                          sisanya untuk developer lokal
-                          <span className="text-gray-400">
-                            {" "}
-                            (detikINET, Apr 2025)
-                          </span>
+                        <p className="text-[10px] text-gray-400 mt-1 max-w-[110px] leading-snug">
+                          sisanya untuk developer lokal <span className="text-gray-500">(detikINET, Apr 2025)</span>
                         </p>
                       </div>
                     </div>
+                  </div>
 
+                  {/* Center Spacer — 3D Model sits here */}
+                  <div className="hidden lg:block lg:col-span-4" />
+
+                  {/* Right Column — Solution Details */}
+                  <div className="lg:col-span-4 pointer-events-auto max-w-sm flex flex-col justify-center">
                     <div className="space-y-4">
                       <div className="border-l-2 border-fuchsia-400/30 pl-4">
-                        <p className="text-xs uppercase tracking-[0.2em] text-gray-400 mb-1.5">
+                        <p className="text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-1.5">
                           Solusi
                         </p>
-                        <p className="font-body text-gray-200 text-base leading-relaxed">
+                        <p className="font-body text-gray-300 text-xs md:text-sm leading-relaxed">
                           Game shooter dengan karakter, senjata, skin, dan
                           cerita bernuansa budaya Indonesia: arena futuristik,
                           karakter berbahasa Indonesia, enam ability unik (Fast,
@@ -296,8 +297,6 @@ export default function Home() {
                       </div>
                     </div>
                   </div>
-                  {/* Spacer for 3D content on the right */}
-                  <div className="hidden lg:block lg:col-span-6 xl:col-span-7" />
                 </div>
               </WardekaCanvas>
             </section>
@@ -307,71 +306,65 @@ export default function Home() {
               <VRCanvas scrollProgressRef={vrProgressRef}>
                 <div
                   ref={vrTextRef}
-                  className="w-full h-full grid grid-cols-1 lg:grid-cols-12 px-6 md:px-16 lg:px-24 items-center pointer-events-none"
+                  className="w-full h-full grid grid-cols-1 lg:grid-cols-12 px-6 md:px-16 lg:px-24 items-center pointer-events-none gap-8"
                   style={{ willChange: "opacity, transform" }}
                 >
-                  {/* Left spacer — VR 3D sits here */}
-                  <div className="hidden lg:block lg:col-span-6 xl:col-span-7" />
-
-                  {/* Right column — text content */}
-                  <div className="lg:col-span-6 xl:col-span-5 max-w-xl">
-                    <span className="text-sm font-bold tracking-[0.35em] uppercase text-violet-400 mb-4 block">
+                  {/* Left Column — Header and Intro */}
+                  <div className="lg:col-span-4 pointer-events-auto max-w-sm flex flex-col justify-center">
+                    <span className="text-[10px] font-bold tracking-[0.35em] uppercase text-violet-400 mb-2 block animate-pulse">
                       EdTech · VR Simulation
                     </span>
 
-                    <h2 className="font-display text-4xl md:text-6xl font-bold text-white mb-5">
+                    <h2 className="font-display text-2xl md:text-3xl font-bold text-white mb-3">
                       Interactive Learning{" "}
                       <span className="text-violet-400 drop-shadow-[0_0_8px_rgba(167,139,250,0.4)]">
                         Nusa Space
                       </span>
                     </h2>
 
-                    <p className="font-body text-gray-100 text-base md:text-lg leading-relaxed mb-8">
-                      Simulasi edukasi interaktif berbasis PC dan VR bertema
-                      eksplorasi luar angkasa, disusun oleh Big Dade Interactive
-                      di bawah PT Kawanua Virtual Teknologi. Pengguna menjalani
-                      misi berjenjang dari lokasi peluncuran hingga orbit
-                      Stasiun Luar Angkasa Internasional (ISS), lengkap dengan
-                      Player HUD dan panel progres.
+                    <p className="font-body text-gray-300 text-xs md:text-sm leading-relaxed mb-5">
+                      Simulasi edukasi interaktif berbasis PC dan VR bertema eksplorasi luar angkasa, disusun oleh Big Dade Interactive di bawah PT Kawanua Virtual Teknologi.
                     </p>
 
-                    <div className="flex items-end gap-8 mb-8 border-l-2 border-violet-400/30 pl-5">
+                    {/* STAT CALLOUT */}
+                    <div className="flex items-end gap-6 border-l-2 border-violet-400/30 pl-4">
                       <div>
-                        <p className="font-display text-3xl md:text-4xl font-bold text-white leading-none">
+                        <p className="font-display text-xl md:text-2xl font-bold text-white leading-none">
                           3
                         </p>
-                        <p className="text-xs text-gray-300 mt-1.5 max-w-[130px] leading-snug">
-                          fase misi, dari landasan peluncuran hingga orbit ISS
+                        <p className="text-[10px] text-gray-400 mt-1 max-w-[110px] leading-snug">
+                          fase misi luar angkasa
                         </p>
                       </div>
                       <div>
-                        <p className="font-display text-3xl md:text-4xl font-bold text-violet-400 leading-none">
+                        <p className="font-display text-xl md:text-2xl font-bold text-violet-400 leading-none">
                           98
                         </p>
-                        <p className="text-xs text-gray-300 mt-1.5 max-w-[130px] leading-snug">
-                          contoh skor evaluasi akhir, grade A (22/23 benar)
+                        <p className="text-[10px] text-gray-400 mt-1 max-w-[110px] leading-snug">
+                          skor evaluasi akhir (Grade A)
                         </p>
                       </div>
                     </div>
+                  </div>
 
+                  {/* Center Spacer — 3D Model sits here */}
+                  <div className="hidden lg:block lg:col-span-4" />
+
+                  {/* Right Column — Features and Info */}
+                  <div className="lg:col-span-4 pointer-events-auto max-w-sm flex flex-col justify-center">
                     <div className="space-y-4">
                       <div className="border-l-2 border-violet-400/30 pl-4">
-                        <p className="text-xs uppercase tracking-[0.2em] text-gray-400 mb-1.5">
+                        <p className="text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-1.5">
                           Fitur Utama
                         </p>
-                        <p className="font-body text-gray-200 text-base leading-relaxed">
-                          Object Inspector untuk merotasi, zoom, dan membongkar
-                          (dismantle) model 3D seperti roket Falcon Heavy,
-                          satelit, dan modul ISS (Columbus/ESA, JPM/JAXA, Lab AS
-                          Destiny). Dilengkapi kuis interaktif per fase, login
-                          ID pengguna untuk tracking progres dan skor, serta
-                          mendukung mode PC dan VR.
+                        <p className="font-body text-gray-300 text-xs md:text-sm leading-relaxed">
+                          Object Inspector untuk merotasi, zoom, dan membongkar (dismantle) model 3D seperti roket Falcon Heavy, satelit, dan modul ISS. Dilengkapi kuis interaktif, login ID tracking progres, dan mendukung PC/VR.
                         </p>
                       </div>
                     </div>
 
-                    <p className="text-xs text-gray-500 mt-6 italic">
-                      ✦ Seret objek di sebelah kiri untuk memutarnya 360°
+                    <p className="text-[10px] text-gray-500 mt-5 italic">
+                      ✦ Seret objek di tengah untuk memutarnya 360°
                     </p>
                   </div>
                 </div>

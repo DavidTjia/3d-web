@@ -17,7 +17,7 @@
  * begitu user scroll keluar dari section hero, masuk ke section portfolio.
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // ─── Inline value noise ─────────────────────────────────────────────────
 function hash2(x: number, y: number) {
@@ -318,6 +318,18 @@ export default function SpiderCreature({
   scrollProgressRef,
 }: SpiderCreatureProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth >= 1024);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -486,7 +498,9 @@ export default function SpiderCreature({
       window.removeEventListener("resize", resize);
       window.removeEventListener("mousemove", onMove);
     };
-  }, [scrollProgressRef]);
+  }, [scrollProgressRef, isDesktop]);
+
+  if (!isDesktop) return null;
 
   return (
     <canvas

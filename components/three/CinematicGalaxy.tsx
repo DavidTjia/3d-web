@@ -141,25 +141,7 @@ const GALAXY_FRAG = /* glsl */ `
   }
 `;
 
-// ─── Core glow shader (fake bloom at galaxy centre) ──────────────────────────
-const CORE_VERT = /* glsl */ `
-  uniform float uScale;
-  uniform float uCollapse;
-  void main() {
-    float s = uScale * 0.9 + uCollapse * 0.1;
-    vec3 pos = position * s;
-    pos = mix(pos, vec3(0.0), uCollapse * uCollapse);
-    vec4 mv = modelViewMatrix * vec4(pos, 1.0);
-    gl_Position = projectionMatrix * mv;
-  }
-`;
-const CORE_FRAG = /* glsl */ `
-  uniform float uScale;
-  uniform float uAlpha;
-  void main() {
-    gl_FragColor = vec4(1.0, 0.95, 0.88, uAlpha * uScale * 0.55);
-  }
-`;
+
 
 // ─── Explosion Vertex Shader ─────────────────────────────────────────────────
 const EXPLODE_VERT = /* glsl */ `

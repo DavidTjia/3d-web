@@ -1,6 +1,6 @@
 "use client";
 
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import { useRef, useMemo, useEffect } from "react";
 import * as THREE from "three";
 import { useGLTF, useTexture } from "@react-three/drei";
@@ -77,6 +77,8 @@ function updateStarProximity(
 export default function WardekaTrophy({
   scrollProgressRef,
 }: WardekaTrophyProps) {
+  const { size } = useThree();
+  const isMobile = size.width < 1024;
   const groupRef = useRef<THREE.Group>(null);
 
   // Refs per bintang, disimpan sebagai array, jumlahnya ngikutin STAR_CONFIG
@@ -283,7 +285,7 @@ export default function WardekaTrophy({
   });
 
   return (
-    <group ref={groupRef} position={[1.4, -0.3, 0]}>
+    <group ref={groupRef} position={isMobile ? [0, 1.2, 0] : [0, 0.1, 0]} scale={isMobile ? 0.7 : 0.9}>
       {/* FOTO WARDEKA — centerpiece, landscape orientation, dengan HUD frame */}
       <group ref={photoGroupRef} position={[-0.05, 0, 0.2]}>
         <mesh ref={photoGlowRef} position={[0, 0.2, -0.05]}>

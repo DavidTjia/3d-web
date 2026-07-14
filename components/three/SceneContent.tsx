@@ -34,7 +34,7 @@ const CAM_PATH = [
   // Mid journey — stable centered dolly along the boulevard
   { t: 0.43, pos: [0.0, 3.7, -95.0], look: [0.0, 1.5, -110.0] },
   // Deep corridor — gentle rise for a premium horizon view
-  { t: 0.70, pos: [0.0, 3.9, -165.0], look: [0.0, 1.6, -185.0] },
+  { t: 0.7, pos: [0.0, 3.9, -165.0], look: [0.0, 1.6, -185.0] },
   // Approach final plaza — calm, centered and slightly elevated
   { t: 0.85, pos: [0.0, 4.4, -215.0], look: [0.0, 1.8, -245.0] },
   // Final destination — centered, premium, horizon-focused
@@ -111,7 +111,6 @@ export default function SceneContent({
 
   useFrame((state) => {
     const scroll = bgScrollRef.current ?? 0;
-    const time = state.clock.getElapsedTime();
 
     // ── Compute target from spline ────────────────────────────────────
     targetPos.current.set(
@@ -126,9 +125,6 @@ export default function SceneContent({
     );
 
     // ── No lateral drift: keep the path locked on the road center.
-    const scrollSpeed = Math.abs(
-      scroll - (state.camera.userData.prevScroll ?? scroll),
-    );
     state.camera.userData.prevScroll = scroll;
     targetPos.current.x = 0;
     targetLook.current.x = 0;

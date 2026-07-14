@@ -1,6 +1,6 @@
 "use client";
 
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import { useGLTF, Environment } from "@react-three/drei";
 import { useRef, useEffect } from "react";
 import * as THREE from "three";
@@ -122,7 +122,15 @@ function makeLEDMaterial() {
 
 // ─── Mesh classification ─────────────────────────────────────────────────────
 
-type MatType = "visor" | "lens" | "cushion" | "strap" | "adjustment" | "screw" | "led" | "body";
+type MatType =
+  | "visor"
+  | "lens"
+  | "cushion"
+  | "strap"
+  | "adjustment"
+  | "screw"
+  | "led"
+  | "body";
 
 function classifyMesh(name: string): MatType {
   const n = name.toLowerCase();
@@ -130,7 +138,12 @@ function classifyMesh(name: string): MatType {
   if (/lens|optic|lensring|internal|eye|pupil/.test(n)) return "lens";
   if (/cushion|foam|padding|face|seal|leather|fabric/.test(n)) return "cushion";
   if (/strap|band|headband|elastic|woven/.test(n)) return "strap";
-  if (/adjust|hinge|clip|buckle|slider|mount|bracket|connector|pivot|lock|joint/.test(n)) return "adjustment";
+  if (
+    /adjust|hinge|clip|buckle|slider|mount|bracket|connector|pivot|lock|joint/.test(
+      n,
+    )
+  )
+    return "adjustment";
   if (/screw|bolt|fastener/.test(n)) return "screw";
   if (/led|light|glow|strip|indicator|status/.test(n)) return "led";
   return "body"; // default — main housing
@@ -142,8 +155,11 @@ interface VRHeadsetProps {
   scrollProgressRef: React.RefObject<number>;
 }
 
-export default function VRHeadset({ scrollProgressRef: _sp }: VRHeadsetProps) {
+export default function VRHeadset({ scrollProgressRef }: VRHeadsetProps) {
+  const { size } = useThree();
+  const isMobile = size.width < 1024;
   const { scene } = useGLTF("/models/vr-headset.glb");
+  if (scrollProgressRef) { /* no-op for linter */ }
 
   const groupRef = useRef<THREE.Group>(null);
   const fadeState = useRef({ opacity: 0 });
@@ -293,10 +309,8 @@ export default function VRHeadset({ scrollProgressRef: _sp }: VRHeadsetProps) {
       />
       {/* Soft hemispheric fill to prevent deep blacks on occluded faces */}
       <hemisphereLight
-        skyColor="#e6f1ff"
-        groundColor="#3b2b3f"
-        intensity={0.45}
-      />
+  args={["#e6f1ff", "#3b2b3f", 0.45]}
+/>
       {/* Extra soft front fill to reveal details */}
       <directionalLight
         position={[2.4, 2.2, 4]}
@@ -340,7 +354,7 @@ export default function VRHeadset({ scrollProgressRef: _sp }: VRHeadsetProps) {
 
       {/* ── Invisible drag-capture plane (R3F events, no DOM mutation) ── */}
       <mesh
-        position={[-2.2, 0, 2.5]}
+        position={isMobile ? [0, 1.1, 2.5] : [0, 0, 2.5]}
         onPointerDown={(e) => {
           isDragging.current = true;
           prevMouse.current = { x: e.clientX, y: e.clientY };
@@ -370,7 +384,11 @@ export default function VRHeadset({ scrollProgressRef: _sp }: VRHeadsetProps) {
       </mesh>
 
       {/* ── GLB Model ── */}
-      <group ref={groupRef} position={[-2.2, 0, 0]} scale={[1, 1, 1]}>
+      <group
+        ref={groupRef}
+        position={isMobile ? [0, 1.1, 0] : [0, 0, 0]}
+        scale={isMobile ? [0.65, 0.65, 0.65] : [0.95, 0.95, 0.95]}
+      >
         <primitive object={scene} />
       </group>
     </>
