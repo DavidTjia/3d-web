@@ -8,9 +8,9 @@ import AwardsCanvas from "@/components/three/AwardsCanvas";
 import CustomCursor from "@/components/ui/CustomCursor";
 import SpiderCreature from "@/components/ui/SpiderCreature";
 import SmoothScroll from "@/components/ui/SmoothScroll";
-import RocketLoader from "@/components/ui/RocketLoader";
 import Navbar from "@/components/ui/Navbar";
 import RecognitionList from "@/components/ui/RecognitionList";
+import ContactSection from "@/components/ui/ContactSection";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -42,8 +42,9 @@ export default function Home() {
   const mainRef = useRef<HTMLDivElement>(null);
 
   // Controls loading vs main experience visibility
-  const [isLoading, setIsLoading] = useState(true);
-  const [mainVisible, setMainVisible] = useState(false);
+  // Loading overlay removed — show main immediately so user can click.
+  const [isLoading, setIsLoading] = useState(false);
+  const [mainVisible, setMainVisible] = useState(true);
 
   // Register GSAP plugin sekali di awal
   useEffect(() => {
@@ -167,14 +168,11 @@ export default function Home() {
     };
   }, [mainVisible]);
 
-  const handleLoadingComplete = () => {
-    setMainVisible(true);
-    setTimeout(() => setIsLoading(false), 400);
-  };
+  // loading removed; no handler needed
 
   return (
     <>
-      {isLoading && <RocketLoader onComplete={handleLoadingComplete} />}
+      {/* loading overlay removed */}
 
       <div
         ref={mainRef}
@@ -402,30 +400,8 @@ export default function Home() {
                 RecognitionList.tsx. */}
             <RecognitionList />
 
-            {/* SECTION: TRANSITION & DEMO CARD */}
-            <section className="relative flex min-h-screen w-full items-center justify-center px-6 py-24 bg-transparent">
-              <div className="glassmorphism max-w-3xl w-full p-10 md:p-14 rounded-2xl relative overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/5 to-fuchsia-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-
-                <span className="text-xs font-bold tracking-[0.35em] uppercase text-emerald-400 mb-4 block">
-                  01 // The Odyssey
-                </span>
-
-                <h2 className="font-display text-3xl md:text-5xl font-bold tracking-wide text-white mb-6">
-                  Experiences Shaped in Deep Space.
-                </h2>
-
-                <p className="font-body text-gray-200 text-base md:text-lg font-normal leading-relaxed mb-8">
-                  We push the boundaries of real-time WebGL and game engine
-                  technologies to build immersive, high-performance interactive
-                  portals. Hover the cursor to watch the alien constellation
-                  creature adapt its energy tentacles to local space coordinates
-                  in real-time.
-                </p>
-
-                <div className="w-16 h-[2px] bg-gradient-to-r from-emerald-400 to-fuchsia-500" />
-              </div>
-            </section>
+            {/* SECTION: CONTACT (replaces bottom demo card) */}
+            <ContactSection />
           </main>
         </SmoothScroll>
       </div>

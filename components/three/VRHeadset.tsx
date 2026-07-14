@@ -14,79 +14,125 @@ useGLTF.preload("/models/vr-headset.glb");
 
 // ─── Material factory ────────────────────────────────────────────────────────
 
-/** Matte black premium plastic — used for main body */
+/** Matte dark gray premium plastic — used for the outer shell */
 function makeBodyMaterial() {
-  return new THREE.MeshStandardMaterial({
-    color: new THREE.Color("#121212"),
-    roughness: 0.55,
-    metalness: 0.05,
-    envMapIntensity: 0.9,
+  return new THREE.MeshPhysicalMaterial({
+    color: new THREE.Color("#181b1f"),
+    roughness: 0.58,
+    metalness: 0.08,
+    clearcoat: 0.08,
+    clearcoatRoughness: 0.78,
+    envMapIntensity: 1.1,
+    reflectivity: 0.06,
   });
 }
 
-/** Glossy visor glass — blue-purple iridescent */
+/** Smoked black glass front panel */
 function makeVisorMaterial() {
   return new THREE.MeshPhysicalMaterial({
-    color: new THREE.Color("#0a0f2e"),
-    roughness: 0.0,
+    color: new THREE.Color("#090a0d"),
+    roughness: 0.16,
     metalness: 0.0,
-    transmission: 0.75,
-    thickness: 0.4,
-    ior: 1.52,
-    clearcoat: 1.0,
-    clearcoatRoughness: 0.05,
-    reflectivity: 1.0,
-    iridescence: 1.0,
-    iridescenceIOR: 1.5,
-    iridescenceThicknessRange: [100, 800],
-    envMapIntensity: 3.0,
+    transmission: 0.66,
+    thickness: 0.28,
+    ior: 1.6,
+    clearcoat: 0.22,
+    clearcoatRoughness: 0.24,
+    reflectivity: 0.14,
+    envMapIntensity: 1.05,
     transparent: true,
-    opacity: 0.88,
+    opacity: 0.92,
     side: THREE.FrontSide,
   });
 }
 
-/** Dark fabric-like strap material */
+/** Subtle internal optics behind the glass */
+function makeLensMaterial() {
+  return new THREE.MeshPhysicalMaterial({
+    color: new THREE.Color("#0b0c10"),
+    roughness: 0.24,
+    metalness: 0.04,
+    transmission: 0.52,
+    thickness: 0.18,
+    ior: 1.5,
+    clearcoat: 0.12,
+    clearcoatRoughness: 0.32,
+    reflectivity: 0.1,
+    envMapIntensity: 0.85,
+    transparent: true,
+    opacity: 0.9,
+  });
+}
+
+/** Soft matte leather face cushion */
+function makeCushionMaterial() {
+  return new THREE.MeshStandardMaterial({
+    color: new THREE.Color("#0a0b0d"),
+    roughness: 0.92,
+    metalness: 0.03,
+    envMapIntensity: 0.05,
+    emissive: new THREE.Color("#040506"),
+    emissiveIntensity: 0.02,
+  });
+}
+
+/** Dark woven head strap */
 function makeStrapMaterial() {
   return new THREE.MeshStandardMaterial({
-    color: new THREE.Color("#1c1c1c"),
-    roughness: 0.92,
+    color: new THREE.Color("#111214"),
+    roughness: 0.88,
     metalness: 0.0,
-    envMapIntensity: 0.2,
+    envMapIntensity: 0.22,
   });
 }
 
-/** Metallic black buttons / accents */
-function makeButtonMaterial() {
+/** Satin black polymer for adjustment pieces */
+function makeAdjustmentMaterial() {
+  return new THREE.MeshPhysicalMaterial({
+    color: new THREE.Color("#08090b"),
+    roughness: 0.42,
+    metalness: 0.18,
+    clearcoat: 0.08,
+    clearcoatRoughness: 0.7,
+    envMapIntensity: 0.85,
+    reflectivity: 0.08,
+  });
+}
+
+/** Brushed aluminum for small screws */
+function makeScrewMaterial() {
   return new THREE.MeshStandardMaterial({
-    color: new THREE.Color("#0e0e0e"),
-    roughness: 0.2,
-    metalness: 0.85,
-    envMapIntensity: 1.2,
+    color: new THREE.Color("#3c4046"),
+    roughness: 0.34,
+    metalness: 0.74,
+    envMapIntensity: 0.9,
   });
 }
 
-/** Glowing cyan LED accent */
+/** Very subtle status LED accent */
 function makeLEDMaterial() {
   return new THREE.MeshStandardMaterial({
-    color: new THREE.Color("#00ddff"),
-    emissive: new THREE.Color("#00ddff"),
-    emissiveIntensity: 2.5,
-    roughness: 0.1,
-    metalness: 0.8,
+    color: new THREE.Color("#22d3ee"),
+    emissive: new THREE.Color("#22d3ee"),
+    emissiveIntensity: 0.7,
+    roughness: 0.18,
+    metalness: 0.3,
   });
 }
 
 // ─── Mesh classification ─────────────────────────────────────────────────────
 
-type MatType = "visor" | "strap" | "button" | "led" | "body";
+type MatType = "visor" | "lens" | "cushion" | "strap" | "adjustment" | "screw" | "led" | "body";
 
 function classifyMesh(name: string): MatType {
   const n = name.toLowerCase();
-  if (/visor|lens|glass|screen|display|window/.test(n)) return "visor";
-  if (/strap|band|foam|padding|cushion|headband|elastic/.test(n)) return "strap";
-  if (/button|btn|dial|knob|port|usb|switch|trigger/.test(n)) return "button";
-  if (/led|light|glow|strip|accent|neon/.test(n)) return "led";
+  if (/visor|glass|screen|display|window/.test(n)) return "visor";
+  if (/lens|optic|lensring|internal|eye|pupil/.test(n)) return "lens";
+  if (/cushion|foam|padding|face|seal|leather|fabric/.test(n)) return "cushion";
+  if (/strap|band|headband|elastic|woven/.test(n)) return "strap";
+  if (/adjust|hinge|clip|buckle|slider|mount|bracket|connector|pivot|lock|joint/.test(n)) return "adjustment";
+  if (/screw|bolt|fastener/.test(n)) return "screw";
+  if (/led|light|glow|strip|indicator|status/.test(n)) return "led";
   return "body"; // default — main housing
 }
 
@@ -99,11 +145,11 @@ interface VRHeadsetProps {
 export default function VRHeadset({ scrollProgressRef: _sp }: VRHeadsetProps) {
   const { scene } = useGLTF("/models/vr-headset.glb");
 
-  const groupRef   = useRef<THREE.Group>(null);
-  const fadeState  = useRef({ opacity: 0 });
+  const groupRef = useRef<THREE.Group>(null);
+  const fadeState = useRef({ opacity: 0 });
   const isDragging = useRef(false);
-  const prevMouse  = useRef({ x: 0, y: 0 });
-  const targetRot  = useRef({ x: -0.15, y: 0.5 });
+  const prevMouse = useRef({ x: 0, y: 0 });
+  const targetRot = useRef({ x: -0.15, y: 0.5 });
   const currentRot = useRef({ x: -0.15, y: 0.5 });
 
   // ── Apply materials to all meshes in the GLB ─────────────────────────────
@@ -119,16 +165,34 @@ export default function VRHeadset({ scrollProgressRef: _sp }: VRHeadsetProps) {
       // Reuse the same material instance for the same type (performance)
       if (!matCache[type]) {
         switch (type) {
-          case "visor":  matCache[type] = makeVisorMaterial();  break;
-          case "strap":  matCache[type] = makeStrapMaterial();  break;
-          case "button": matCache[type] = makeButtonMaterial(); break;
-          case "led":    matCache[type] = makeLEDMaterial();    break;
-          default:       matCache[type] = makeBodyMaterial();
+          case "visor":
+            matCache[type] = makeVisorMaterial();
+            break;
+          case "lens":
+            matCache[type] = makeLensMaterial();
+            break;
+          case "cushion":
+            matCache[type] = makeCushionMaterial();
+            break;
+          case "strap":
+            matCache[type] = makeStrapMaterial();
+            break;
+          case "adjustment":
+            matCache[type] = makeAdjustmentMaterial();
+            break;
+          case "screw":
+            matCache[type] = makeScrewMaterial();
+            break;
+          case "led":
+            matCache[type] = makeLEDMaterial();
+            break;
+          default:
+            matCache[type] = makeBodyMaterial();
         }
       }
 
       mesh.material = matCache[type]!;
-      mesh.castShadow    = true;
+      mesh.castShadow = true;
       mesh.receiveShadow = true;
 
       // Ensure normals are up to date for lighting
@@ -172,15 +236,23 @@ export default function VRHeadset({ scrollProgressRef: _sp }: VRHeadsetProps) {
   // ── Frame loop ───────────────────────────────────────────────────────────
   useFrame((state) => {
     if (!groupRef.current) return;
-    const t       = state.clock.elapsedTime;
+    const t = state.clock.elapsedTime;
     const opacity = fadeState.current.opacity;
 
     // Auto slow-spin when idle
     if (!isDragging.current) targetRot.current.y += 0.0025;
 
     // Smooth rotation lerp — headset stays centred, only the model rotates
-    currentRot.current.x = THREE.MathUtils.lerp(currentRot.current.x, targetRot.current.x, 0.08);
-    currentRot.current.y = THREE.MathUtils.lerp(currentRot.current.y, targetRot.current.y, 0.08);
+    currentRot.current.x = THREE.MathUtils.lerp(
+      currentRot.current.x,
+      targetRot.current.x,
+      0.08,
+    );
+    currentRot.current.y = THREE.MathUtils.lerp(
+      currentRot.current.y,
+      targetRot.current.y,
+      0.08,
+    );
     groupRef.current.rotation.x = currentRot.current.x;
     groupRef.current.rotation.y = currentRot.current.y;
 
@@ -191,7 +263,9 @@ export default function VRHeadset({ scrollProgressRef: _sp }: VRHeadsetProps) {
     groupRef.current.traverse((child) => {
       const mesh = child as THREE.Mesh;
       if (!mesh.isMesh) return;
-      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      const mats = Array.isArray(mesh.material)
+        ? mesh.material
+        : [mesh.material];
       mats.forEach((m) => {
         const mat = m as THREE.MeshStandardMaterial;
         mat.opacity = opacity;
@@ -205,7 +279,7 @@ export default function VRHeadset({ scrollProgressRef: _sp }: VRHeadsetProps) {
       {/* Key light — top-left-front */}
       <directionalLight
         position={[-4, 6, 6]}
-        intensity={3.5}
+        intensity={3.8}
         color="#c8d8ff"
         castShadow
         shadow-mapSize={[2048, 2048]}
@@ -217,11 +291,33 @@ export default function VRHeadset({ scrollProgressRef: _sp }: VRHeadsetProps) {
         shadow-camera-bottom={-5}
         shadow-bias={-0.001}
       />
+      {/* Soft hemispheric fill to prevent deep blacks on occluded faces */}
+      <hemisphereLight
+        skyColor="#e6f1ff"
+        groundColor="#3b2b3f"
+        intensity={0.45}
+      />
+      {/* Extra soft front fill to reveal details */}
+      <directionalLight
+        position={[2.4, 2.2, 4]}
+        intensity={1.6}
+        color="#f0f8ff"
+      />
       {/* Fill light — bottom right */}
-      <directionalLight position={[5, -3, 4]}  intensity={1.5} color="#9955ff" />
+      <directionalLight position={[5, -3, 4]} intensity={1.5} color="#9955ff" />
       {/* Rim light — behind (creates visible edge on dark body) */}
-      <pointLight position={[-3,  1, -6]} intensity={6}   color="#0055ff" distance={18} />
-      <pointLight position={[ 3,  0, -5]} intensity={4}   color="#8800ee" distance={18} />
+      <pointLight
+        position={[-3, 1, -6]}
+        intensity={6}
+        color="#0055ff"
+        distance={18}
+      />
+      <pointLight
+        position={[3, 0, -5]}
+        intensity={4}
+        color="#8800ee"
+        distance={18}
+      />
       {/* Soft ambient */}
       <ambientLight intensity={0.18} color="#aabbdd" />
 
@@ -233,7 +329,11 @@ export default function VRHeadset({ scrollProgressRef: _sp }: VRHeadsetProps) {
       />
 
       {/* Shadow catcher plane */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.2, 0]} receiveShadow>
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, -1.2, 0]}
+        receiveShadow
+      >
         <planeGeometry args={[12, 12]} />
         <shadowMaterial opacity={0.18} />
       </mesh>
@@ -243,7 +343,7 @@ export default function VRHeadset({ scrollProgressRef: _sp }: VRHeadsetProps) {
         position={[-2.2, 0, 2.5]}
         onPointerDown={(e) => {
           isDragging.current = true;
-          prevMouse.current  = { x: e.clientX, y: e.clientY };
+          prevMouse.current = { x: e.clientX, y: e.clientY };
           e.stopPropagation();
         }}
         onPointerMove={(e) => {
@@ -252,22 +352,25 @@ export default function VRHeadset({ scrollProgressRef: _sp }: VRHeadsetProps) {
           const dy = e.clientY - prevMouse.current.y;
           targetRot.current.y += dx * 0.012;
           targetRot.current.x += dy * 0.008;
-          targetRot.current.x = Math.max(-Math.PI * 0.5, Math.min(Math.PI * 0.5, targetRot.current.x));
+          targetRot.current.x = Math.max(
+            -Math.PI * 0.5,
+            Math.min(Math.PI * 0.5, targetRot.current.x),
+          );
           prevMouse.current = { x: e.clientX, y: e.clientY };
         }}
-        onPointerUp={() => { isDragging.current = false; }}
-        onPointerLeave={() => { isDragging.current = false; }}
+        onPointerUp={() => {
+          isDragging.current = false;
+        }}
+        onPointerLeave={() => {
+          isDragging.current = false;
+        }}
       >
         <planeGeometry args={[9, 7]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
 
       {/* ── GLB Model ── */}
-      <group
-        ref={groupRef}
-        position={[-2.2, 0, 0]}
-        scale={[1, 1, 1]}
-      >
+      <group ref={groupRef} position={[-2.2, 0, 0]} scale={[1, 1, 1]}>
         <primitive object={scene} />
       </group>
     </>

@@ -234,7 +234,8 @@ function drawLeg(
     ctx.beginPath();
     ctx.moveTo(x0, y0);
     ctx.lineTo(x1, y1);
-    ctx.strokeStyle = `rgba(185,225,255,${a})`;
+    const aLocal = Math.min(a * 1.25, 1);
+    ctx.strokeStyle = `rgba(200,240,255,${aLocal})`;
 
     // Thicken near foot (t0 -> 0) and head (t0 -> 1) for realistic anatomy
     const thicknessEnv = 0.55 * Math.pow(1.0 - t0, 1.5) + env * 1.75;
@@ -258,8 +259,8 @@ function drawLeg(
       footY,
       auraRad,
     );
-    gAura.addColorStop(0, `rgba(104, 136, 255, ${0.16 * w})`);
-    gAura.addColorStop(0.5, `rgba(104, 136, 255, ${0.05 * w})`);
+    gAura.addColorStop(0, `rgba(104, 136, 255, ${0.28 * w})`);
+    gAura.addColorStop(0.5, `rgba(104, 136, 255, ${0.12 * w})`);
     gAura.addColorStop(1, "rgba(104, 136, 255, 0)");
     ctx.beginPath();
     ctx.arc(footX, footY, auraRad, 0, Math.PI * 2);
@@ -278,8 +279,8 @@ function drawLeg(
       footY,
       glowRad,
     );
-    gGlow.addColorStop(0, `rgba(184, 232, 255, ${0.72 * w})`);
-    gGlow.addColorStop(0.6, `rgba(184, 232, 255, ${0.25 * w})`);
+    gGlow.addColorStop(0, `rgba(184, 232, 255, ${0.92 * w})`);
+    gGlow.addColorStop(0.6, `rgba(184, 232, 255, ${0.45 * w})`);
     gGlow.addColorStop(1, "rgba(184, 232, 255, 0)");
     ctx.beginPath();
     ctx.arc(footX, footY, glowRad, 0, Math.PI * 2);
@@ -298,8 +299,8 @@ function drawLeg(
       footY,
       coreRad,
     );
-    gCore.addColorStop(0, `rgba(191, 232, 255, ${0.65 * w})`);
-    gCore.addColorStop(0.5, `rgba(191, 232, 255, ${0.3 * w})`);
+    gCore.addColorStop(0, `rgba(191, 232, 255, ${0.9 * w})`);
+    gCore.addColorStop(0.5, `rgba(191, 232, 255, ${0.5 * w})`);
     gCore.addColorStop(1, "rgba(191, 232, 255, 0)");
     ctx.beginPath();
     ctx.arc(footX, footY, coreRad, 0, Math.PI * 2);
@@ -385,42 +386,10 @@ export default function SpiderCreature({
       const hx = head.x + snoise(t * 0.45, 99) * 2.2;
       const hy = head.y + snoise(88, t * 0.38) * 1.8;
 
-      for (let i = 0; i < STARS.length; i++) {
-        const s = STARS[i];
-        const tw = 0.6 + 0.4 * Math.sin(t * s.speed + s.phase);
-
-        if (s.tier === 0) {
-          ctx.beginPath();
-          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(210,222,255,${0.2 * tw})`;
-          ctx.fill();
-        } else if (s.tier === 1) {
-          const g = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r * 2.5);
-          g.addColorStop(0, `rgba(225,235,255,${0.5 * tw})`);
-          g.addColorStop(1, "rgba(210,225,255,0)");
-          ctx.beginPath();
-          ctx.arc(s.x, s.y, s.r * 2.5, 0, Math.PI * 2);
-          ctx.fillStyle = g;
-          ctx.fill();
-          ctx.beginPath();
-          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(255,255,255,${0.7 * tw})`;
-          ctx.fill();
-        } else {
-          const g = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r * 4);
-          g.addColorStop(0, `rgba(210,230,255,${0.38 * tw})`);
-          g.addColorStop(0.5, `rgba(190,215,255,${0.1 * tw})`);
-          g.addColorStop(1, "rgba(170,200,255,0)");
-          ctx.beginPath();
-          ctx.arc(s.x, s.y, s.r * 4, 0, Math.PI * 2);
-          ctx.fillStyle = g;
-          ctx.fill();
-          ctx.beginPath();
-          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(255,255,255,${0.85 * tw})`;
-          ctx.fill();
-        }
-      }
+      // Do NOT render the background star visuals here — keep positions
+      // so tentacles can still find anchor points, but avoid drawing
+      // many small white dots that clutter the hero photo.
+      // (STARS array remains populated and used below for leg targeting.)
 
       const nearby: { idx: number; dist2: number }[] = [];
       const R2 = ACTIVE_RADIUS * ACTIVE_RADIUS;
@@ -450,14 +419,15 @@ export default function SpiderCreature({
       for (const idx of active) {
         if (!legMap.has(idx)) {
           legMap.set(idx, {
-            alpha: 0.05,
+            alpha: 0.06,
             targetAlpha: 1,
             bendAngle: (Math.random() - 0.5) * Math.PI * 1.1,
-            bendMag: 0.55 + Math.random() * 1.05,
+            bendMag: 0.6 + Math.random() * 1.1,
             noiseFreq: 0.4 + Math.random() * 1.6,
-            noiseAmp: 6 + Math.random() * 18,
-            widthMul: 0.45 + Math.random() * 1.4,
-            opacityMul: 0.4 + Math.random() * 0.55,
+            noiseAmp: 8 + Math.random() * 20,
+            widthMul: 0.55 + Math.random() * 1.6,
+            // Increase base opacity multiplier so tentacles are brighter
+            opacityMul: 0.75 + Math.random() * 0.65,
             seed: ++seedCounter * 0.37,
           });
         }
@@ -476,8 +446,8 @@ export default function SpiderCreature({
       const hr = 6.5 * pulse;
 
       const aura = ctx.createRadialGradient(hx, hy, 0, hx, hy, hr * 8);
-      aura.addColorStop(0, "rgba(140,200,255,0.12)");
-      aura.addColorStop(0.5, "rgba(120,175,255,0.04)");
+      aura.addColorStop(0, "rgba(140,200,255,0.18)");
+      aura.addColorStop(0.5, "rgba(120,175,255,0.07)");
       aura.addColorStop(1, "rgba(100,160,255,0)");
       ctx.beginPath();
       ctx.arc(hx, hy, hr * 8, 0, Math.PI * 2);
@@ -485,8 +455,8 @@ export default function SpiderCreature({
       ctx.fill();
 
       const glow = ctx.createRadialGradient(hx, hy, 0, hx, hy, hr * 3);
-      glow.addColorStop(0, "rgba(230,245,255,0.55)");
-      glow.addColorStop(0.55, "rgba(200,225,255,0.15)");
+      glow.addColorStop(0, "rgba(230,245,255,0.78)");
+      glow.addColorStop(0.55, "rgba(200,225,255,0.28)");
       glow.addColorStop(1, "rgba(180,210,255,0)");
       ctx.beginPath();
       ctx.arc(hx, hy, hr * 3, 0, Math.PI * 2);
@@ -495,7 +465,7 @@ export default function SpiderCreature({
 
       const core = ctx.createRadialGradient(hx, hy, 0, hx, hy, hr);
       core.addColorStop(0, "rgba(255,255,255,1)");
-      core.addColorStop(0.45, "rgba(240,248,255,0.88)");
+      core.addColorStop(0.45, "rgba(240,248,255,0.98)");
       core.addColorStop(1, "rgba(210,235,255,0)");
       ctx.beginPath();
       ctx.arc(hx, hy, hr, 0, Math.PI * 2);
