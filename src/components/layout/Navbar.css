@@ -1,0 +1,144 @@
+.navbar {
+  position: fixed;
+  inset: 0 0 auto;
+  width: 100%;
+  z-index: 1000;
+  padding: 12px 0;
+  transition: padding 220ms ease, background-color 220ms ease, box-shadow 220ms ease;
+}
+
+.navbar--scrolled {
+  padding: 8px 0;
+}
+
+.navbar__shell {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04);
+}
+
+.navbar__content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 24px;
+}
+
+.navbar__logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.navbar__logo-image {
+  height: 32px;
+  width: auto;
+  object-fit: contain;
+}
+
+.navbar__logo-text {
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #0f4c81;
+  letter-spacing: -0.01em;
+}
+
+.navbar__navigation {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 32px;
+  margin-left: auto;
+}
+
+.navbar__link {
+  color: #0f172a;
+  font-size: 0.9rem;
+  font-weight: 500;
+  position: relative;
+  padding: 4px 0;
+}
+
+.navbar__link::after {
+  content: "";
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: #2563eb;
+  transition: width 220ms ease;
+}
+
+.navbar__link:hover::after {
+  width: 100%;
+}
+
+.navbar__menu-button {
+  display: none;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 10px;
+  padding: 8px;
+  color: #0f172a;
+  background: white;
+}
+
+.mobile-navigation {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .navbar__navigation {
+    display: none;
+  }
+
+  .navbar__menu-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  .mobile-navigation {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.14);
+    padding: 20px 24px;
+    margin-top: 14px;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 260ms ease, opacity 260ms ease;
+    opacity: 0;
+  }
+
+  .mobile-navigation--open {
+    max-height: 320px;
+    opacity: 1;
+  }
+
+  .mobile-navigation__link {
+    color: #0f172a;
+    font-weight: 600;
+    padding: 10px 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .navbar__content {
+    padding: 8px 16px;
+    gap: 12px;
+  }
+
+  .navbar__shell {
+    border-radius: 12px;
+  }
+
+  .navbar__menu-button {
+    padding: 8px;
+  }
+}

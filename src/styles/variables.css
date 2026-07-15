@@ -1,0 +1,31 @@
+:root {
+  /* ========= Colors ========= */
+  --color-primary: #2563eb;
+  --color-primary-dark: #1d4ed8;
+
+  --color-background: #f8fafc;
+  --color-surface: #ffffff;
+
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #64748b;
+
+  --color-border: #e2e8f0;
+
+  /* ========= Layout ========= */
+
+  --container-width: 1280px;
+
+  --section-spacing: 120px;
+
+  --border-radius: 18px;
+
+  /* ========= Shadow ========= */
+
+  --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.04);
+
+  --shadow-md: 0 12px 40px rgba(15, 23, 42, 0.08);
+
+  /* ========= Transition ========= */
+
+  --transition-default: 250ms ease;
+}
