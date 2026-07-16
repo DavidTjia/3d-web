@@ -33,37 +33,34 @@ function Navbar() {
   return (
     <header className={`navbar ${hasScrolled ? "navbar--scrolled" : ""}`}>
       <Container>
-        <div className="navbar__shell">
-          <div className="navbar__content">
-            <a href="#home" className="navbar__logo">
-              <img src={kvtLogo} alt="Kawanua Virtual Teknologi" className="navbar__logo-image" />
-          
-            </a>
+        <div className="navbar__content">
+          <a href="#home" className="navbar__logo">
+            <img src={kvtLogo} alt="Kawanua Virtual Teknologi" className="navbar__logo-image" />
+          </a>
 
-            <nav className="navbar__navigation" aria-label="Primary navigation">
-              {navigationItems.map((navigationItem) => (
-                <a
-                  key={navigationItem.label}
-                  href={navigationItem.href}
-                  className="navbar__link"
-                  onClick={handleNavigationClick}
-                >
-                  {navigationItem.label}
-                </a>
-              ))}
-            </nav>
+          <nav className="navbar__navigation" aria-label="Primary navigation">
+            {navigationItems.map((navigationItem) => (
+              <a
+                key={navigationItem.label}
+                href={navigationItem.href}
+                className="navbar__link"
+                onClick={handleNavigationClick}
+              >
+                {navigationItem.label}
+              </a>
+            ))}
+          </nav>
 
-            <button
-              className="navbar__menu-button"
-              type="button"
-              aria-controls="navbar-mobile-menu"
-              aria-expanded={isMobileMenuOpen}
-              aria-label={isMobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
-              onClick={handleMenuToggle}
-            >
-              {isMobileMenuOpen ? <HiOutlineX /> : <HiOutlineMenuAlt3 />}
-            </button>
-          </div>
+          <button
+            className="navbar__menu-button"
+            type="button"
+            aria-controls="navbar-mobile-menu"
+            aria-expanded={isMobileMenuOpen}
+            aria-label={isMobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+            onClick={handleMenuToggle}
+          >
+            {isMobileMenuOpen ? <HiOutlineX /> : <HiOutlineMenuAlt3 />}
+          </button>
         </div>
       </Container>
 

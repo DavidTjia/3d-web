@@ -65,13 +65,7 @@ function Hero() {
                   <span className="hero__visual-label-interactive">Interactive</span>
                   <span className="hero__visual-label-drag">drag to rotate</span>
                 </div>
-                <div className="hero__chip hero__chip--bottom">
-                  <span className="hero__chip-dot"></span>
-                  <div className="hero__chip-text">
-                    <span className="hero__chip-status">Render ready</span>
-                    <span className="hero__chip-annotation">WebGL · glTF</span>
-                  </div>
-                </div>
+                
               </div>
             </div>
           </div>

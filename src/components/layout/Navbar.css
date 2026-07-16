@@ -1,70 +1,71 @@
+/* Clean, Classy Full-Width Navbar */
 .navbar {
   position: fixed;
   inset: 0 0 auto;
   width: 100%;
   z-index: 1000;
-  padding: 12px 0;
-  transition: padding 220ms ease, background-color 220ms ease, box-shadow 220ms ease;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  padding: 18px 0;
+  transition: padding 280ms ease, background-color 280ms ease, box-shadow 280ms ease;
 }
 
+/* Subtle elevation when scrolled */
 .navbar--scrolled {
-  padding: 8px 0;
-}
-
-.navbar__shell {
-  background: white;
-  border-radius: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.15);
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04);
+  padding: 12px 0;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.03);
+  border-bottom-color: rgba(148, 163, 184, 0.14);
 }
 
 .navbar__content {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 24px;
+  width: 100%;
 }
 
 .navbar__logo {
   display: flex;
   align-items: center;
-  gap: 10px;
+  text-decoration: none;
 }
 
 .navbar__logo-image {
-  height: 32px;
+  height: 38px;
   width: auto;
   object-fit: contain;
-}
-
-.navbar__logo-text {
-  font-size: 0.78rem;
-  font-weight: 700;
-  line-height: 1.25;
-  color: #0f4c81;
-  letter-spacing: -0.01em;
+  display: block;
 }
 
 .navbar__navigation {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 32px;
-  margin-left: auto;
+  gap: 36px;
 }
 
 .navbar__link {
-  color: #0f172a;
-  font-size: 0.9rem;
+  color: #334155; /* Slate 700 */
+  font-size: 0.92rem;
   font-weight: 500;
   position: relative;
-  padding: 4px 0;
+  padding: 6px 0;
+  text-decoration: none;
+  transition: color 220ms ease;
 }
 
+.navbar__link:hover {
+  color: #0f172a; /* Slate 900 */
+}
+
+/* Underline indicator on hover */
 .navbar__link::after {
   content: "";
   position: absolute;
-  bottom: -4px;
+  bottom: -2px;
   left: 0;
   width: 0;
   height: 2px;
@@ -79,16 +80,59 @@
 .navbar__menu-button {
   display: none;
   border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 8px;
   color: #0f172a;
   background: white;
+  cursor: pointer;
+  transition: background 200ms ease;
 }
 
+.navbar__menu-button:hover {
+  background: #f8fafc;
+}
+
+/* Mobile responsive menu positioning */
 .mobile-navigation {
-  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background: white;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 280ms ease, opacity 280ms ease;
+  opacity: 0;
+  z-index: 999;
 }
 
+.mobile-navigation--open {
+  max-height: 250px;
+  opacity: 1;
+}
+
+.mobile-navigation .container {
+  display: flex;
+  flex-direction: column;
+  padding-block: 16px;
+  gap: 12px;
+}
+
+.mobile-navigation__link {
+  color: #334155;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.06);
+}
+
+.mobile-navigation__link:last-child {
+  border-bottom: none;
+}
+
+/* Media Query breakpoints */
 @media (max-width: 900px) {
   .navbar__navigation {
     display: none;
@@ -98,47 +142,15 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-  }
-
-  .mobile-navigation {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    background: white;
-    border-radius: 12px;
-    border: 1px solid rgba(148, 163, 184, 0.14);
-    padding: 20px 24px;
-    margin-top: 14px;
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 260ms ease, opacity 260ms ease;
-    opacity: 0;
-  }
-
-  .mobile-navigation--open {
-    max-height: 320px;
-    opacity: 1;
-  }
-
-  .mobile-navigation__link {
-    color: #0f172a;
-    font-weight: 600;
-    padding: 10px 0;
   }
 }
 
 @media (max-width: 640px) {
-  .navbar__content {
-    padding: 8px 16px;
-    gap: 12px;
+  .navbar {
+    padding: 14px 0;
   }
 
-  .navbar__shell {
-    border-radius: 12px;
-  }
-
-  .navbar__menu-button {
-    padding: 8px;
+  .navbar__logo-image {
+    height: 32px;
   }
 }

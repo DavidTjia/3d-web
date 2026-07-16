@@ -1,5 +1,6 @@
 import Container from "../ui/Container";
 import { projectList } from "../../constants/projectData";
+import wardekaLogo from "../../assets/logo/wardeka_logo.jpeg";
 import "./Projects.css";
 
 function ProjectCard({ project, index, isReversed }) {
@@ -38,19 +39,24 @@ function ProjectCard({ project, index, isReversed }) {
       </div>
 
       <div className="project-card__media">
-        <div className="project-card__media-frame">
-          <div className="project-card__media-badge">3D / video</div>
-          <div className="project-card__media-placeholder">
-            <div className="project-card__media-circle"></div>
-            <p className="project-card__media-title">Object / image placeholder</p>
-            <p className="project-card__media-copy">
-              {index === 0
-                ? "Reserved for gameplay capture or 3D render"
-                : "Reserved for VR scene render or walkthrough"}
-            </p>
-          </div>
+     
+         
+          {index === 0 ? (
+            <img
+              src={wardekaLogo}
+              className="project-card__media-image"
+              alt="Wardeka Edonisia"
+            />
+          ) : (
+            <div className="project-card__media-placeholder">
+              <div className="project-card__media-circle"></div>
+              <p className="project-card__media-title">Nusa Space VR Showcase</p>
+              <p className="project-card__media-copy">
+                VR asset integration and interactive virtual environment walkthrough.
+              </p>
+            </div>
+          )}
         </div>
-      </div>
     </article>
   );
 }
